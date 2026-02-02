@@ -21,3 +21,6 @@ ui-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Backend Compiled Code
+functions/lib/
