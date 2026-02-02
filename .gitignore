@@ -1,0 +1,23 @@
+# Dependencies (Ignores node_modules in root and subfolders)
+node_modules/
+
+# Production Build Outputs
+dist/
+frontend/dist/
+
+# Environment Variables (CRITICAL: Never commit these)
+.env
+.env.local
+.env.*.local
+
+# Firebase Cache & Logs
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# OS & IDE System Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
