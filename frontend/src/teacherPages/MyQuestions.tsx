@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { ArrowLeft, MessageCircle, CheckCircle, Clock } from 'lucide-react';
+import { MessageCircle, CheckCircle, Clock } from 'lucide-react';
 
 // Mock Data
 const MOCK_QUESTIONS = [
