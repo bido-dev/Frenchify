@@ -113,25 +113,52 @@ Phase 3: Monetization & Polish (Weeks 5-6)
 •	Unlock "Download" and "Q&A" features for Paid users.
 •	Final UI Polish.
 ________________________________________
+I apologize for that oversight. I mistakenly summarized the User Stories section to focus on the new changes, but I should have kept the full list so the document remains complete for your .docx file.
+Below is the full, restored Section 9, combining your original stories with the new requirements (Global Subscription, Q&A, and Quiz boundaries).
+________________________________________
 9. User Stories
-(Includes updates for Q&A and Subscription clarity)
 A. Student Stories
-•	Freemium Access
-o	Story: As a Free Tier student, I want to be assigned a "Free" account so I can browse the catalog.
-•	Global Subscription
-o	Story: As a Paid Tier student, I want access to all paid courses on the platform without buying them individually.
-o	Acceptance Criteria: Clicking any "Locked" course grants immediate access if tier == 'paid'.
+•	Freemium Access (The Guardrail)
+o	Story: As a Free Tier student, I want to be automatically assigned a "Free" account upon signup so that I can start learning French immediately without paying.
+o	Acceptance Criteria: Firestore document created with tier: "free" on signup.
+•	Accessing Content
+o	Story: As a Free Tier student, I want to clearly see which French lessons are locked vs. free.
+o	Acceptance Criteria: Paid modules have a "Lock" icon. Clicking them triggers an "Upgrade" modal.
+•	Global Subscription (Netflix Model)
+o	Story: As a Paid Tier student, I want access to all paid courses on the platform immediately after upgrading, without buying them individually.
+o	Acceptance Criteria: Clicking any "Locked" course grants immediate access if user.tier == 'paid'.
+•	Downloads (Offline Study)
+o	Story: As a Paid Tier student, I want to download French grammar sheets to my device so I can study offline.
+o	Acceptance Criteria: A "Download" button appears next to materials only if user.tier == 'paid'.
+•	Asking Questions (Q&A)
+o	Story: As a Paid Tier student, I want to ask questions on specific course lessons to get clarification.
+o	Acceptance Criteria: A "Post Question" input appears under the video. This input is hidden or disabled for Free Tier users.
 B. Teacher Stories
+•	YouTube Integration (Grammar)
+o	Story: As a teacher, I want to paste a YouTube link for a Grammar lesson instead of uploading a file, so that I can use existing high-quality content without waiting for uploads.
+o	Acceptance Criteria: The "Add Material" form accepts a YouTube URL, extracts the ID, and the student view renders a player.
+•	Audio Uploads (Conversation)
+o	Story: As a teacher, I want to upload recordings of French conversations.
+o	Acceptance Criteria: Drag-and-drop upload to Firebase Storage supported for audio files.
+•	Course Creation & Publishing
+o	Story: As a teacher, I want to draft a new French course, but I understand I cannot "Publish" it until my account is approved.
+o	Acceptance Criteria: A "Create Course" form exists. The "Publish" button is disabled/hidden if user.status != 'approved'.
 •	Quiz Creation (Self-Check)
-o	Story: As a teacher, I want to add simple multiple-choice quizzes to materials.
-o	Acceptance Criteria: Quiz renders on the frontend; no scores are saved to the database.
-•	Publishing Flow
-o	Story: As a teacher, I want to draft a course, but I understand I cannot publish it until an Admin approves my account.
-o	Acceptance Criteria: "Publish" button is disabled/hidden if user.status != 'approved'.
+o	Story: As a teacher, I want to add simple multiple-choice quizzes to materials to help students check their understanding.
+o	Acceptance Criteria: Quiz renders on the frontend. No grades are stored in the database (client-side only).
+•	Answering Questions
+o	Story: As a teacher, I want to see and reply to questions students have asked on my courses.
+o	Acceptance Criteria: A "Q&A" tab in the Teacher Dashboard shows unanswered questions for their specific courses.
 C. Admin Stories
 •	Teacher Gatekeeping
-o	Story: As an admin, I want to approve new teachers so they can start publishing content.
-o	Acceptance Criteria: Approval action updates user role/status; triggers email notification (optional).
+o	Story: As an admin, I want to approve or reject new teacher registrations so that only qualified instructors can publish content.
+o	Acceptance Criteria: Dashboard list of "Pending Teachers" with "Approve/Reject" buttons. Approval updates the user status to allow publishing.
+•	Subscription Oversight
+o	Story: As an admin, I want to manually manage a student's subscription status for support purposes.
+o	Acceptance Criteria: Admin can toggle a user's tier field from "free" to "paid" in the dashboard.
+•	User Management
+o	Story: As an admin, I want to delete users who violate the terms of service.
+o	Acceptance Criteria: "Delete User" button removes the user from Firebase Auth and Firestore.
 ________________________________________
 10. Figma Wireframe Descriptions
 Global Components

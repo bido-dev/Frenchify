@@ -9,7 +9,7 @@ export const CoursePlayer: React.FC = () => {
     return (
         <div className="max-w-6xl mx-auto space-y-6">
             <div className="mb-4">
-                <Link to="/" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
+                <Link to="/dashboard" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition-colors">
                     <ArrowLeft className="w-4 h-4 mr-1" />
                     Back to Dashboard
                 </Link>

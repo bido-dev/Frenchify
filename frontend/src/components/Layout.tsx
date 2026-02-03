@@ -20,7 +20,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, userTier = 'free' }) =
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between h-16">
                         <div className="flex items-center">
-                            <Link to="/" className="flex-shrink-0 flex items-center gap-2">
+                            <Link to="/dashboard" className="flex-shrink-0 flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 flex items-center justify-center text-white font-bold text-xl">
                                     F
                                 </div>
@@ -28,8 +28,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, userTier = 'free' }) =
                             </Link>
                             <div className="hidden sm:ml-8 sm:flex sm:space-x-8">
                                 <Link
-                                    to="/"
-                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    to="/dashboard"
+                                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${isActive('/dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                         }`}
                                 >
                                     <BookOpen className="w-4 h-4 mr-2" />
@@ -46,9 +46,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, userTier = 'free' }) =
                                 </Button>
                             )}
                             <div className="flex-shrink-0">
-                                <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 border border-gray-300">
-                                    <User size={18} />
-                                </div>
+                                <Link to="/profile">
+                                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-500 border border-gray-300 hover:ring-2 hover:ring-offset-2 hover:ring-blue-500 transition-all cursor-pointer">
+                                        <User size={18} />
+                                    </div>
+                                </Link>
                             </div>
                         </div>
                     </div>

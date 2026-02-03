@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 import { Star } from 'lucide-react';
 
 export const Register: React.FC = () => {

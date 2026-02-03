@@ -1,0 +1,171 @@
+# Frenchify Project Rules
+
+## Project Overview
+Frenchify is a French Language Learning Management System (LMS) built with React (Vite), Firebase, and Express.js. The platform operates on a Freemium model with three user roles: Students, Teachers, and Administrators.
+
+## Tech Stack
+- **Frontend**: React 19.2.0 + TypeScript + Vite
+- **Styling**: Tailwind CSS v4 (CSS-based configuration)
+- **Routing**: React Router DOM v7
+- **Icons**: Lucide React
+- **Backend**: Firebase (Auth, Firestore, Storage) + Express.js (Cloud Functions)
+
+## Code Style & Conventions
+
+### TypeScript
+- Use TypeScript for all `.tsx` and `.ts` files
+- Define interfaces for component props with the `interface` keyword
+- Use explicit types for function parameters and return values
+- Prefer `React.FC` for functional components with typed props
+
+### React Components
+- Use functional components with hooks (no class components)
+- Use `useState`, `useEffect`, `useNavigate`, `useLocation` as needed
+- Component file names should be PascalCase (e.g., `Button.tsx`, `CourseCard.tsx`)
+- Export components as named exports: `export const ComponentName: React.FC = () => { ... }`
+
+### File Structure
+```
+src/
+├── components/        # Reusable UI components (Button, Input, Badge, Layout, etc.)
+├── pages/            # Student pages (Dashboard, CoursePlayer, Profile)
+├── forms/            # Auth pages (LandingPage, Login, Register)
+├── teacherPages/     # Teacher pages (TeacherDashboard, CourseEditor, MyQuestions)
+│   ├── components/   # Teacher-specific components
+│   └── TeacherLayout.tsx
+└── App.tsx           # Main routing
+```
+
+### Routing Conventions
+- **Public Routes**: `/`, `/login`, `/register`
+- **Student Routes**: `/dashboard`, `/course/:courseId`, `/profile`
+- **Teacher Routes**: `/teacher/dashboard`, `/teacher/questions`, `/teacher/course/:courseId/edit`, `/teacher/course/new`
+- Use `<Layout>` wrapper for student routes
+- Use `<TeacherLayout>` wrapper for teacher routes
+
+## Tailwind CSS v4 Configuration
+
+### Setup
+- Configuration is in `src/index.css` using `@theme` directive (NOT `tailwind.config.js`)
+- Import: `@import "tailwindcss";`
+- Vite plugin: `@tailwindcss/vite` in `vite.config.ts`
+
+### Design System Colors
+```css
+--color-azure-blue: oklch(from #0055a4 l c h);
+--color-marianne-red: oklch(from #ef4135 l c h);
+--color-emerald: oklch(from #10b981 l c h);
+--color-gold: oklch(from #f59e0b l c h);
+--color-slate-blue: oklch(from #6366f1 l c h);
+```
+
+### Typography
+- Font family: `Inter` (imported from Google Fonts)
+- Use `font-bold`, `font-semibold`, `font-medium` for emphasis
+- Heading scales: `text-3xl`, `text-2xl`, `text-xl`, `text-lg`
+
+### Component Styling
+- Use Tailwind utility classes directly in JSX
+- Avoid inline styles unless absolutely necessary
+- Use `className` conditionally with template literals for dynamic styles
+- Prefer composition over configuration for component variants
+
+## Component Patterns
+
+### Button Component
+```tsx
+<Button variant="primary" size="lg" isLoading={loading}>
+  Click Me
+</Button>
+```
+Variants: `primary`, `action`, `destructive`, `ghost`
+Sizes: `sm`, `md`, `lg`
+
+### Input Component
+```tsx
+<Input label="Email" type="email" name="email" required />
+```
+
+### Badge Component
+```tsx
+<Badge variant="free" />  {/* or "pro" */}
+```
+
+### Layout Components
+- `Layout`: Student navigation (Blue accents, "Frenchify" branding)
+- `TeacherLayout`: Teacher navigation (Indigo accents, "Frenchify Teacher" branding)
+
+## Design Principles
+
+### Visual Excellence
+- Use modern, premium design aesthetics
+- Implement subtle animations and hover effects
+- Use curated color palettes (avoid generic colors)
+- Implement glassmorphism and gradients where appropriate
+
+### French Theme
+- Subtle French flag color accents (Blue, White, Red)
+- Use "Frenchify" branding consistently
+- Teacher branding variant: "Frenchify Teacher"
+
+### Responsive Design
+- Mobile-first approach
+- Use `sm:`, `md:`, `lg:` breakpoints
+- Grid layouts: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+
+## State Management
+- Use React `useState` for local component state
+- Use `useNavigate()` for programmatic navigation
+- Use `useLocation()` for route-based UI state (e.g., active nav links)
+
+## Mock Data
+- All data is currently mocked in components (MOCK_COURSES, MOCK_QUESTIONS, etc.)
+- Use realistic data structures matching Firestore schema
+- Include fields: `id`, `title`, `description`, `isPaid`, `tier`, `status`, etc.
+
+## Role-Based Navigation
+- Student login redirects to `/dashboard`
+- Teacher login redirects to `/teacher/dashboard`
+- Role selection toggle on Login page
+
+## Freemium Logic
+- Free tier: Limited access, "Upgrade to Pro" buttons
+- Paid tier: Full access, no upgrade prompts
+- Locked courses show lock icon for free users
+
+## Best Practices
+- **Performance**: Keep components focused and avoid unnecessary re-renders
+- **Accessibility**: Use semantic HTML, proper labels, and ARIA attributes
+- **Code Reusability**: Extract common patterns into reusable components
+- **Naming**: Use descriptive names for variables, functions, and components
+- **Comments**: Only add comments for complex logic, not obvious code
+- **Imports**: Group imports (React, third-party, local components)
+- **Error Handling**: Add proper error states and loading states
+
+## Git Workflow
+- Frontend code in `d:/MyProjects/Frenchify/frontend/`
+- Backend functions in `d:/MyProjects/Frenchify/functions/`
+- Use descriptive commit messages
+
+## Testing & Verification
+- Run `npm run dev` in frontend directory
+- Test all routing paths manually
+- Verify role-based redirects
+- Check responsive behavior at different breakpoints
+
+## Common Commands
+```bash
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```
+
+## Notes
+- PostCSS and legacy Tailwind config files have been removed (v4 migration)
+- React import is optional in v19 but included for clarity
+- All auth logic is currently simulated (no real Firebase integration yet)

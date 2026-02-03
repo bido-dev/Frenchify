@@ -1,6 +1,6 @@
 import React from 'react'; // Ensure React is imported for JSX
 import { Link } from 'react-router-dom';
-import { Button } from '../../components/Button';
+import { Button } from '../components/Button';
 import { BookOpen, MessageCircle, Award, Star, Check } from 'lucide-react';
 
 export const LandingPage: React.FC = () => {

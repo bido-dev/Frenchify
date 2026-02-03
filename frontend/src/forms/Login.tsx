@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '../../components/Button';
-import { Input } from '../../components/Input';
+import { Button } from '../components/Button';
+import { Input } from '../components/Input';
 import { ArrowRight } from 'lucide-react';
 
 export const Login: React.FC = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [role, setRole] = useState<'student' | 'teacher'>('student');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -14,7 +15,11 @@ export const Login: React.FC = () => {
         // Simulate auth
         setTimeout(() => {
             setIsLoading(false);
-            navigate('/dashboard');
+            if (role === 'teacher') {
+                navigate('/teacher/dashboard');
+            } else {
+                navigate('/dashboard');
+            }
         }, 1000);
     };
 
@@ -62,6 +67,30 @@ export const Login: React.FC = () => {
                     </div>
 
                     <div className="space-y-6">
+                        {/* Role Selector */}
+                        <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
+                            <button
+                                type="button"
+                                onClick={() => setRole('student')}
+                                className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'student'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                            >
+                                Student
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRole('teacher')}
+                                className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'teacher'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                            >
+                                Teacher
+                            </button>
+                        </div>
+
                         {/* Social Auth (Visual Only) */}
                         <button className="w-full flex items-center justify-center gap-3 px-4 py-2 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 font-medium transition-colors">
                             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
