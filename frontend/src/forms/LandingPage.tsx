@@ -27,7 +27,7 @@ export const LandingPage: React.FC = () => {
             </nav>
 
             {/* Hero Section */}
-            <div className="relative overflow-hidden pt-20 pb-24 lg:pt-32 lg:pb-40">
+            <div className="relative overflow-hidden pt-20 pb-118 lg:pt-32 lg:pb-40">
                 {/* Background Elements */}
                 <div className="absolute inset-0 z-0">
                     <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
@@ -94,10 +94,10 @@ export const LandingPage: React.FC = () => {
                         </div>
 
                         {/* Visual Content - Floating Elements */}
-                        <div className="flex-1 relative hidden lg:block h-[600px] w-full perspective-1000">
+                        <div className="flex-1 relative block h-[500px] sm:h-[600px] lg:h-[600px] w-full perspective-1000 mt-16 lg:mt-0">
                             {/* Abstract French Composition */}
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="relative w-[500px] h-[500px]">
+                            <div className="absolute inset-0 flex justify-center pt-8 lg:items-center lg:pt-0">
+                                <div className="relative w-[500px] h-[500px] scale-[0.7] sm:scale-[0.8] md:scale-90 lg:scale-100 origin-top lg:origin-center transition-transform duration-500">
                                     {/* Main Glass Card */}
                                     <div className="absolute inset-0 bg-white/40 backdrop-blur-xl rounded-[40px] border border-white/50 shadow-2xl transform rotate-3 z-10 animate-float"></div>
 

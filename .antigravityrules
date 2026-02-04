@@ -93,6 +93,11 @@ frontend/
   - `animate-shimmer`: Gradient text effects
 - **Backgrounds**: Use subtle gradients or grid patterns (`bg-[linear-gradient...]`)
 - **Depth**: Use `shadow-xl`, `backdrop-blur-lg`, and floating elements to create depth
+- **Responsiveness**:
+  - Complex visuals (3D/floating) should be visible on mobile (`block` not `hidden`)
+  - Use `scale-[x]` and `origin-top` to fit large compositions on small screens
+  - Stack layout vertically: Text top, Visuals bottom (`flex-col`)
+  - Ensure sufficient padding/margins (`pb-118`) to prevent overflow clipping
 
 ## Routing
 
