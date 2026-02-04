@@ -133,13 +133,11 @@ export const LandingPage: React.FC = () => {
                                             <div className="h-4 w-5/6 bg-gray-50 rounded"></div>
 
                                             <div className="mt-auto flex gap-3">
-                                                <div className="h-24 flex-1 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-center justify-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-blue-100"></div>
-                                                    <div className="h-2 w-12 bg-blue-200 rounded"></div>
+                                                <div className="h-24 flex-1 bg-blue-50 rounded-xl border border-blue-100 flex flex-col items-center justify-center gap-2 overflow-hidden relative group">
+                                                    <img src="/paris_landmark_thumb_1770224667640.png" alt="Paris Landmark" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                                 </div>
-                                                <div className="h-24 flex-1 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col items-center justify-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-indigo-100"></div>
-                                                    <div className="h-2 w-12 bg-indigo-200 rounded"></div>
+                                                <div className="h-24 flex-1 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col items-center justify-center gap-2 overflow-hidden relative group">
+                                                    <img src="/provence_landscape_thumb_1770224683868.png" alt="Provence Landscape" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                                                 </div>
                                             </div>
                                         </div>

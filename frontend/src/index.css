@@ -5,9 +5,7 @@
 @theme {
     --font-sans: 'Inter', sans-serif;
 
-    /* Frenchify Palette - Standard Tailwind Colors Override */
-    /* Re-declaring to ensure specific mapping if defaults change, 
-     but mostly using standard palette as per PRD */
+    /* Frenchify Palette */
     --color-blue-600: #2563EB;
     /* Azure Blue */
     --color-blue-700: #1D4ED8;
@@ -38,41 +36,8 @@
 
     --color-amber-500: #F59E0B;
     /* Accent: Gold */
-}
 
-@layer base {
-    body {
-        @apply bg-gray-50 text-gray-900 font-sans;
-    }
-}
-
-@layer utilities {
-    .glass-panel {
-        @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
-    }
-
-    .glass-card {
-        @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
-    }
-
-    .text-shadow {
-        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-
-    .text-shadow-lg {
-        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-    }
-
-    .perspective-1000 {
-        perspective: 1000px;
-    }
-
-    .preserve-3d {
-        transform-style: preserve-3d;
-    }
-}
-
-@theme {
+    /* Animations */
     --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
     --animate-float: float 6s ease-in-out infinite;
     --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
@@ -122,5 +87,37 @@
         100% {
             background-position: 200% 0;
         }
+    }
+}
+
+@layer base {
+    body {
+        @apply bg-gray-50 text-gray-900 font-sans;
+    }
+}
+
+@layer utilities {
+    .glass-panel {
+        @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+    }
+
+    .glass-card {
+        @apply bg-white/60 backdrop-blur-md border border-white/30 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1;
+    }
+
+    .text-shadow {
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .text-shadow-lg {
+        text-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+    }
+
+    .perspective-1000 {
+        perspective: 1000px;
+    }
+
+    .preserve-3d {
+        transform-style: preserve-3d;
     }
 }
