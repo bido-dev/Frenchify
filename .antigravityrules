@@ -1,171 +1,160 @@
 # Frenchify Project Rules
 
 ## Project Overview
-Frenchify is a French Language Learning Management System (LMS) built with React (Vite), Firebase, and Express.js. The platform operates on a Freemium model with three user roles: Students, Teachers, and Administrators.
+Frenchify is a language learning platform for teaching French, with separate student and teacher workflows.
 
-## Tech Stack
-- **Frontend**: React 19.2.0 + TypeScript + Vite
-- **Styling**: Tailwind CSS v4 (CSS-based configuration)
-- **Routing**: React Router DOM v7
+## Technology Stack
+- **Frontend**: React 18 + TypeScript + Vite
+- **Styling**: Tailwind CSS v4 (CSS-based config in `src/index.css`)
+- **Routing**: React Router DOM v6
 - **Icons**: Lucide React
-- **Backend**: Firebase (Auth, Firestore, Storage) + Express.js (Cloud Functions)
+- **Backend**: Firebase Functions (Node.js + TypeScript)
 
-## Code Style & Conventions
+## Code Organization
 
-### TypeScript
-- Use TypeScript for all `.tsx` and `.ts` files
-- Define interfaces for component props with the `interface` keyword
-- Use explicit types for function parameters and return values
-- Prefer `React.FC` for functional components with typed props
-
-### React Components
-- Use functional components with hooks (no class components)
-- Use `useState`, `useEffect`, `useNavigate`, `useLocation` as needed
-- Component file names should be PascalCase (e.g., `Button.tsx`, `CourseCard.tsx`)
-- Export components as named exports: `export const ComponentName: React.FC = () => { ... }`
-
-### File Structure
+### Directory Structure
 ```
-src/
-├── components/        # Reusable UI components (Button, Input, Badge, Layout, etc.)
-├── pages/            # Student pages (Dashboard, CoursePlayer, Profile)
-├── forms/            # Auth pages (LandingPage, Login, Register)
-├── teacherPages/     # Teacher pages (TeacherDashboard, CourseEditor, MyQuestions)
-│   ├── components/   # Teacher-specific components
-│   └── TeacherLayout.tsx
-└── App.tsx           # Main routing
+frontend/
+├── src/
+│   ├── components/      # Reusable UI components (Button, Input, Badge, etc.)
+│   ├── pages/          # Student pages (Dashboard, CoursePlayer, Profile)
+│   ├── forms/          # Auth & landing pages (Login, Register, LandingPage)
+│   ├── teacherPages/   # Teacher-specific pages & components
+│   └── types/          # Shared TypeScript type definitions
 ```
 
-### Routing Conventions
-- **Public Routes**: `/`, `/login`, `/register`
-- **Student Routes**: `/dashboard`, `/course/:courseId`, `/profile`
-- **Teacher Routes**: `/teacher/dashboard`, `/teacher/questions`, `/teacher/course/:courseId/edit`, `/teacher/course/new`
-- Use `<Layout>` wrapper for student routes
-- Use `<TeacherLayout>` wrapper for teacher routes
+### Component Architecture
+- Use functional components with TypeScript
+- Export component as named export: `export const ComponentName: React.FC = () => { ... }`
+- Add default export for lazy-loaded route components: `export default ComponentName;`
+- Use React.lazy() for route-level code splitting
 
-## Tailwind CSS v4 Configuration
+## TypeScript Standards
 
-### Setup
-- Configuration is in `src/index.css` using `@theme` directive (NOT `tailwind.config.js`)
-- Import: `@import "tailwindcss";`
-- Vite plugin: `@tailwindcss/vite` in `vite.config.ts`
+### Type Definitions
+- Use shared types from `src/types/` directory
+- Import course types from `src/types/course.ts`
+- Import user types from `src/types/user.ts`
+- Use type-only imports: `import { type ErrorInfo } from 'react';`
 
-### Design System Colors
-```css
---color-azure-blue: oklch(from #0055a4 l c h);
---color-marianne-red: oklch(from #ef4135 l c h);
---color-emerald: oklch(from #10b981 l c h);
---color-gold: oklch(from #f59e0b l c h);
---color-slate-blue: oklch(from #6366f1 l c h);
-```
-
-### Typography
-- Font family: `Inter` (imported from Google Fonts)
-- Use `font-bold`, `font-semibold`, `font-medium` for emphasis
-- Heading scales: `text-3xl`, `text-2xl`, `text-xl`, `text-lg`
-
-### Component Styling
-- Use Tailwind utility classes directly in JSX
-- Avoid inline styles unless absolutely necessary
-- Use `className` conditionally with template literals for dynamic styles
-- Prefer composition over configuration for component variants
+### Naming Conventions
+- Components: PascalCase (e.g., `CourseCard`, `EmptyState`)
+- Types/Interfaces: PascalCase (e.g., `Course`, `User`)
+- Props Interfaces: ComponentName + "Props" (e.g., `CourseCardProps`)
+- Constants: UPPER_SNAKE_CASE (e.g., `MOCK_COURSES`)
 
 ## Component Patterns
 
-### Button Component
-```tsx
-<Button variant="primary" size="lg" isLoading={loading}>
-  Click Me
-</Button>
-```
-Variants: `primary`, `action`, `destructive`, `ghost`
-Sizes: `sm`, `md`, `lg`
+### Reusable Components Created
+- `Button` - with variants: primary, action, ghost, destructive
+- `Input` - form input with label and validation styling
+- `Badge` - with variants: free, pro, neutral
+- `LoadingSpinner` - with sizes: sm, md, lg
+- `EmptyState` - icon, title, description, optional action
+- `SkeletonCard` - loading placeholder for course cards
+- `ErrorBoundary` - catches React errors with fallback UI
+- `PrivateRoute` - authentication guard for protected routes
 
-### Input Component
-```tsx
-<Input label="Email" type="email" name="email" required />
-```
+### State Management
+- Use `useState` for local component state
+- Use `useEffect` for side effects (data fetching, subscriptions)
+- Simulate async operations with setTimeout for demo purposes
+- Store auth token in localStorage: `localStorage.setItem('isAuthenticated', 'true')`
 
-### Badge Component
-```tsx
-<Badge variant="free" />  {/* or "pro" */}
-```
+## Styling Guidelines
 
-### Layout Components
-- `Layout`: Student navigation (Blue accents, "Frenchify" branding)
-- `TeacherLayout`: Teacher navigation (Indigo accents, "Frenchify Teacher" branding)
+### Tailwind CSS v4
+- Custom colors defined in `src/index.css` using CSS variables
+- Use utility classes for most styling
+- Responsive: `sm:`, `md:`, `lg:`, `xl:` breakpoints
+- Test at 375px (mobile), 768px (tablet), 1024px (desktop)
 
-## Design Principles
+### Design Tokens
+- Primary color: Blue (`bg-blue-600`, `text-blue-700`)
+- Teacher variant: Indigo (`bg-indigo-600`)
+- Action CTA: Emerald (`bg-emerald-500`)
+- Spacing: Consistent use of `p-6`, `space-y-8`, `gap-4`
+- Shadows: `shadow-sm`, `shadow-lg` for depth
+- Rounded corners: `rounded-xl` for cards, `rounded-lg` for buttons
 
-### Visual Excellence
-- Use modern, premium design aesthetics
-- Implement subtle animations and hover effects
-- Use curated color palettes (avoid generic colors)
-- Implement glassmorphism and gradients where appropriate
+### Accessibility
+- Add `aria-label` to icon-only buttons
+- Use semantic HTML elements (`<nav>`, `<main>`, `<section>`)
+- Ensure keyboard navigation works (Tab, Enter, Escape)
+- Color contrast should meet WCAG AA standards
+- Add `loading="lazy"` to images
 
-### French Theme
-- Subtle French flag color accents (Blue, White, Red)
-- Use "Frenchify" branding consistently
-- Teacher branding variant: "Frenchify Teacher"
+### Visual Patterns & Motion
+- **Glassmorphism**: Use `.glass-panel` or `.glass-card` for premium surfaces
+- **Animations**:
+  - `animate-fade-in-up`: Entry animations for text/content
+  - `animate-float`: Gentle hovering for decorative elements
+  - `animate-pulse-slow`: Subtle emphasis for backgrounds
+  - `animate-shimmer`: Gradient text effects
+- **Backgrounds**: Use subtle gradients or grid patterns (`bg-[linear-gradient...]`)
+- **Depth**: Use `shadow-xl`, `backdrop-blur-lg`, and floating elements to create depth
 
-### Responsive Design
-- Mobile-first approach
-- Use `sm:`, `md:`, `lg:` breakpoints
-- Grid layouts: `grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+## Routing
 
-## State Management
-- Use React `useState` for local component state
-- Use `useNavigate()` for programmatic navigation
-- Use `useLocation()` for route-based UI state (e.g., active nav links)
+### Route Structure
+- Public: `/`, `/login`, `/register`
+- Student (Protected): `/dashboard`, `/course/:id`, `/profile`
+- Teacher (Protected): `/teacher/dashboard`, `/teacher/course/:id/edit`, `/teacher/questions`
+
+### Navigation
+- Use `useNavigate()` hook, NOT `window.location.href`
+- Wrap protected routes with `<PrivateRoute>` component
+- Use `<Link>` for internal navigation
+- Active route detection: Use `location.pathname` with `startsWith()` for nested routes
+
+## Performance
+
+### Code Splitting
+- All route components are lazy-loaded with React.lazy()
+- Wrap routes in `<Suspense>` with loading fallback
+- Expected initial bundle reduction: 30-40%
+
+### Image Optimization
+- Use CSS gradients instead of external images where possible
+- Add `loading="lazy"` attribute to images
+- Specify width/height to prevent layout shift
+
+## Error Handling
+- Entire app wrapped in `<ErrorBoundary>`
+- Show user-friendly error messages
+- Add loading states for async operations
+- Show `<EmptyState>` when no data available
 
 ## Mock Data
-- All data is currently mocked in components (MOCK_COURSES, MOCK_QUESTIONS, etc.)
-- Use realistic data structures matching Firestore schema
-- Include fields: `id`, `title`, `description`, `isPaid`, `tier`, `status`, etc.
+- Use MOCK_COURSES for dashboard/teacher data
+- Include category field: 'grammar' | 'conversation'
+- Simulate API calls with setTimeout (800-1000ms)
 
-## Role-Based Navigation
-- Student login redirects to `/dashboard`
-- Teacher login redirects to `/teacher/dashboard`
-- Role selection toggle on Login page
+## Testing Guidelines
+- Test all pages at mobile breakpoints (375px)
+- Verify authentication flow (login → redirect)
+- Test filter functionality (All, Grammar, Conversation)
+- Check loading states appear correctly
+- Verify error boundaries catch errors
 
-## Freemium Logic
-- Free tier: Limited access, "Upgrade to Pro" buttons
-- Paid tier: Full access, no upgrade prompts
-- Locked courses show lock icon for free users
+## Firebase Backend (functions/)
+- Use Express.js for API routes
+- Type definitions in `src/types/`
+- Middleware: `auth.ts` for authentication
+- CORS enabled for frontend communication
 
-## Best Practices
-- **Performance**: Keep components focused and avoid unnecessary re-renders
-- **Accessibility**: Use semantic HTML, proper labels, and ARIA attributes
-- **Code Reusability**: Extract common patterns into reusable components
-- **Naming**: Use descriptive names for variables, functions, and components
-- **Comments**: Only add comments for complex logic, not obvious code
-- **Imports**: Group imports (React, third-party, local components)
-- **Error Handling**: Add proper error states and loading states
+## Do NOT
+- ❌ Use `window.location.href` for navigation
+- ❌ Import React in every file (not needed in React 18)
+- ❌ Use inline styles instead of Tailwind classes
+- ❌ Hardcode colors - use Tailwind utilities
+- ❌ Skip error boundaries for new features
+- ❌ Forget default exports for lazy-loaded components
+- ❌ Use external image CDNs (e.g., pravatar.cc) - use local/gradient
 
-## Git Workflow
-- Frontend code in `d:/MyProjects/Frenchify/frontend/`
-- Backend functions in `d:/MyProjects/Frenchify/functions/`
-- Use descriptive commit messages
-
-## Testing & Verification
-- Run `npm run dev` in frontend directory
-- Test all routing paths manually
-- Verify role-based redirects
-- Check responsive behavior at different breakpoints
-
-## Common Commands
-```bash
-# Development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Notes
-- PostCSS and legacy Tailwind config files have been removed (v4 migration)
-- React import is optional in v19 but included for clarity
-- All auth logic is currently simulated (no real Firebase integration yet)
+## Key Files Reference
+- Component library: `src/components/`
+- Route components: `src/pages/`, `src/forms/`, `src/teacherPages/`
+- Type definitions: `src/types/course.ts`, `src/types/user.ts`
+- Styling config: `src/index.css` (Tailwind v4)
+- Main app: `src/App.tsx` (with lazy loading + ErrorBoundary)

@@ -1,0 +1,17 @@
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+
+interface PrivateRouteProps {
+    children: React.ReactNode;
+}
+
+export const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
+    // TODO: Replace with actual auth check (Firebase, Context, etc.)
+    const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
+
+    if (!isAuthenticated) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return <>{children}</>;
+};

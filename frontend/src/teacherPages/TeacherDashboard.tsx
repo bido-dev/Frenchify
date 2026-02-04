@@ -7,9 +7,9 @@ import { Header } from '../components/Header';
 
 // Mock Data
 const MOCK_TEACHER_COURSES = [
-    { id: '1', title: 'French Grammar 101', students: 120, status: 'published', isPaid: false },
-    { id: '2', title: 'Advanced Conversation', students: 45, status: 'draft', isPaid: true },
-    { id: '3', title: 'Business French', students: 80, status: 'published', isPaid: true },
+    { id: '1', title: 'French Grammar 101', students: 120, status: 'published', isPaid: false, category: 'grammar' },
+    { id: '2', title: 'Advanced Conversation', students: 45, status: 'draft', isPaid: true, category: 'conversation' },
+    { id: '3', title: 'Business French', students: 80, status: 'published', isPaid: true, category: 'conversation' },
 ];
 
 export const TeacherDashboard: React.FC = () => {
@@ -81,6 +81,10 @@ export const TeacherDashboard: React.FC = () => {
                                     <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
                                         <Badge variant={course.status === 'published' ? 'free' : 'neutral'} text={course.status} />
                                         <span>•</span>
+                                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                            {course.category === 'grammar' ? 'Grammar' : 'Conversation'}
+                                        </span>
+                                        <span>•</span>
                                         <span>{course.students} Students</span>
                                         <span>•</span>
                                         <Badge variant={course.isPaid ? 'pro' : 'free'} />
@@ -105,3 +109,5 @@ export const TeacherDashboard: React.FC = () => {
         </div>
     );
 };
+
+export default TeacherDashboard;

@@ -163,3 +163,5 @@ export const CourseEditor: React.FC = () => {
         </div>
     );
 };
+
+export default CourseEditor;

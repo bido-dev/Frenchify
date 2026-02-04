@@ -67,3 +67,5 @@ export const CoursePlayer: React.FC = () => {
         </div>
     );
 };
+
+export default CoursePlayer;

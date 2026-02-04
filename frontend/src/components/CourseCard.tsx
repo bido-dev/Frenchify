@@ -7,9 +7,10 @@ export interface CourseCardProps {
     id: string;
     title: string;
     teacherName: string;
-    thumbnailUrl: string; // Placeholder or actual URL
+    thumbnailUrl: string;
     isPaid: boolean;
     userTier: 'free' | 'paid';
+    category: 'grammar' | 'conversation';
     onAction: (id: string) => void;
 }
 
@@ -57,12 +58,12 @@ export const CourseCard: React.FC<CourseCardProps> = ({
                 <p className="text-sm text-gray-500 mb-4">Par {teacherName}</p>
 
                 <Button
-                    variant={isLocked ? 'primary' : 'primary'} // Visual cue, maybe secondary if unlocked? For now primary.
+                    variant={isLocked ? 'action' : 'primary'}
                     size="sm"
                     className="w-full"
                     onClick={() => onAction(id)}
                 >
-                    {isLocked ? 'Unlock Course' : 'Continue Learning'}
+                    {isLocked ? 'Upgrade to Access' : 'Start Learning'}
                 </Button>
             </div>
         </div>

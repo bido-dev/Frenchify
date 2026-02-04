@@ -9,7 +9,12 @@ interface TeacherLayoutProps {
 export const TeacherLayout: React.FC<TeacherLayoutProps> = ({ children }) => {
     const location = useLocation();
 
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path: string) => {
+        if (path === '/teacher/dashboard') {
+            return location.pathname === path || location.pathname.startsWith('/teacher/course');
+        }
+        return location.pathname === path;
+    };
 
     return (
         <div className="min-h-screen bg-gray-100 font-sans">

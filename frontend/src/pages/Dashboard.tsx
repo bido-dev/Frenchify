@@ -1,23 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CourseCard, type CourseCardProps } from '../components/CourseCard';
 import { Button } from '../components/Button';
+import { EmptyState } from '../components/EmptyState';
+import { SkeletonCard } from '../components/SkeletonCard';
+import { BookOpen } from 'lucide-react';
 
 // Mock Data
 const MOCK_COURSES: Omit<CourseCardProps, 'onAction'>[] = [
-    { id: '1', title: 'French Grammar 101', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '' },
-    { id: '2', title: 'Advanced Conversation', teacherName: 'Pierre Dupont', isPaid: true, userTier: 'free', thumbnailUrl: '' },
-    { id: '3', title: 'Business French', teacherName: 'Sarah Smith', isPaid: true, userTier: 'free', thumbnailUrl: '' },
-    { id: '4', title: 'Daily Vocabulary', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '' },
-    { id: '5', title: 'French Cinema History', teacherName: 'Jean Renoir', isPaid: true, userTier: 'free', thumbnailUrl: '' },
+    { id: '1', title: 'French Grammar 101', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '', category: 'grammar' },
+    { id: '2', title: 'Advanced Conversation', teacherName: 'Pierre Dupont', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
+    { id: '3', title: 'Business French', teacherName: 'Sarah Smith', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
+    { id: '4', title: 'Daily Vocabulary', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '', category: 'grammar' },
+    { id: '5', title: 'French Cinema History', teacherName: 'Jean Renoir', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
 ];
 
 export const Dashboard: React.FC = () => {
+    const navigate = useNavigate();
     const [filter, setFilter] = useState<'all' | 'grammar' | 'conversation'>('all');
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Simulate loading courses
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 800);
+        return () => clearTimeout(timer);
+    }, []);
+
+    // Filter courses based on category
+    const filteredCourses = MOCK_COURSES.filter(course => {
+        if (filter === 'all') return true;
+        return course.category === filter;
+    });
 
     const handleCourseAction = (id: string) => {
-        console.log(`Navigate to course ${id}`);
-        // In real app, navigation logic here
-        window.location.href = `/course/${id}`;
+        navigate(`/course/${id}`);
     };
 
     return (
@@ -63,15 +81,33 @@ export const Dashboard: React.FC = () => {
             </div>
 
             {/* Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {MOCK_COURSES.map(course => (
-                    <CourseCard
-                        key={course.id}
-                        {...course}
-                        onAction={handleCourseAction}
-                    />
-                ))}
-            </div>
+            {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <SkeletonCard key={i} />)}
+                </div>
+            ) : filteredCourses.length === 0 ? (
+                <EmptyState
+                    icon={BookOpen}
+                    title="No courses found"
+                    description="Try adjusting your filters or check back later for new content."
+                    action={{
+                        label: "View All Courses",
+                        onClick: () => setFilter('all')
+                    }}
+                />
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {filteredCourses.map(course => (
+                        <CourseCard
+                            key={course.id}
+                            {...course}
+                            onAction={handleCourseAction}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
+
+export default Dashboard;

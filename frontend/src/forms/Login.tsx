@@ -14,6 +14,7 @@ export const Login: React.FC = () => {
         setIsLoading(true);
         // Simulate auth
         setTimeout(() => {
+            localStorage.setItem('isAuthenticated', 'true');
             setIsLoading(false);
             if (role === 'teacher') {
                 navigate('/teacher/dashboard');
@@ -73,8 +74,8 @@ export const Login: React.FC = () => {
                                 type="button"
                                 onClick={() => setRole('student')}
                                 className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'student'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 Student
@@ -83,8 +84,8 @@ export const Login: React.FC = () => {
                                 type="button"
                                 onClick={() => setRole('teacher')}
                                 className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'teacher'
-                                        ? 'bg-white text-gray-900 shadow-sm'
-                                        : 'text-gray-500 hover:text-gray-900'
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900'
                                     }`}
                             >
                                 Teacher
@@ -132,3 +133,5 @@ export const Login: React.FC = () => {
         </div>
     );
 };
+
+export default Login;

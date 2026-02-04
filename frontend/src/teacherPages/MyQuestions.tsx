@@ -171,3 +171,5 @@ export const MyQuestions: React.FC = () => {
         </div>
     );
 };
+
+export default MyQuestions;
