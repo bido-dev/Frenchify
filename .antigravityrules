@@ -16,88 +16,121 @@ Frenchify is a language learning platform for teaching French, with separate stu
 ```
 frontend/
 ├── src/
-│   ├── components/      # Reusable UI components (Button, Input, Badge, etc.)
-│   ├── pages/          # Student pages (Dashboard, CoursePlayer, Profile)
-│   ├── forms/          # Auth & landing pages (Login, Register, LandingPage)
-│   ├── teacherPages/   # Teacher-specific pages & components
-│   └── types/          # Shared TypeScript type definitions
+│   ├── components/    # Reusable UI components
+│   ├── pages/         # Student route components
+│   ├── teacherPages/  # Teacher route components
+│   ├── forms/         # Form components (Login, Register, etc.)
+│   ├── types/         # TypeScript interfaces
+│   ├── utils/         # Helper functions
+│   ├── App.tsx        # Main app with routing
+│   └── index.css      # Tailwind v4 config + global styles
 ```
 
-### Component Architecture
-- Use functional components with TypeScript
-- Export component as named export: `export const ComponentName: React.FC = () => { ... }`
-- Add default export for lazy-loaded route components: `export default ComponentName;`
-- Use React.lazy() for route-level code splitting
-
-## TypeScript Standards
-
-### Type Definitions
-- Use shared types from `src/types/` directory
-- Import course types from `src/types/course.ts`
-- Import user types from `src/types/user.ts`
-- Use type-only imports: `import { type ErrorInfo } from 'react';`
+## Component Guidelines
 
 ### Naming Conventions
-- Components: PascalCase (e.g., `CourseCard`, `EmptyState`)
-- Types/Interfaces: PascalCase (e.g., `Course`, `User`)
-- Props Interfaces: ComponentName + "Props" (e.g., `CourseCardProps`)
-- Constants: UPPER_SNAKE_CASE (e.g., `MOCK_COURSES`)
+- Components: PascalCase (e.g., `CourseCard.tsx`)
+- Files: Match component name
+- Props interfaces: `ComponentNameProps`
+- Hooks: camelCase starting with `use` (e.g., `useAuth`)
 
-## Component Patterns
+### Component Structure
+```tsx
+import { ComponentProps } from '../types';
 
-### Reusable Components Created
-- `Button` - with variants: primary, action, ghost, destructive
-- `Input` - form input with label and validation styling
-- `Badge` - with variants: free, pro, neutral
-- `LoadingSpinner` - with sizes: sm, md, lg
-- `EmptyState` - icon, title, description, optional action
-- `SkeletonCard` - loading placeholder for course cards
-- `ErrorBoundary` - catches React errors with fallback UI
-- `PrivateRoute` - authentication guard for protected routes
+export default function ComponentName({ prop1, prop2 }: ComponentProps) {
+  // 1. Hooks
+  // 2. State
+  // 3. Effects
+  // 4. Handlers
+  // 5. Render
+  return (
+    <div>
+      {/* JSX */}
+    </div>
+  );
+}
+```
 
-### State Management
-- Use `useState` for local component state
-- Use `useEffect` for side effects (data fetching, subscriptions)
-- Simulate async operations with setTimeout for demo purposes
-- Store auth token in localStorage: `localStorage.setItem('isAuthenticated', 'true')`
+### Props Pattern
+- Always destructure props in function signature
+- Use TypeScript interfaces for prop types
+- Provide default values when appropriate
+- Example: `function Button({ label, variant = 'primary', onClick }: ButtonProps)`
 
 ## Styling Guidelines
 
 ### Tailwind CSS v4
-- Custom colors defined in `src/index.css` using CSS variables
-- Use utility classes for most styling
-- Responsive: `sm:`, `md:`, `lg:`, `xl:` breakpoints
-- Test at 375px (mobile), 768px (tablet), 1024px (desktop)
+- Configuration is in `src/index.css` using CSS variables
+- Use `@theme` directive for custom tokens
+- Utility-first approach - avoid inline styles
 
-### Design Tokens
-- Primary color: Blue (`bg-blue-600`, `text-blue-700`)
-- Teacher variant: Indigo (`bg-indigo-600`)
-- Action CTA: Emerald (`bg-emerald-500`)
-- Spacing: Consistent use of `p-6`, `space-y-8`, `gap-4`
-- Shadows: `shadow-sm`, `shadow-lg` for depth
-- Rounded corners: `rounded-xl` for cards, `rounded-lg` for buttons
+### Color Palette
+```css
+--color-primary: #2563eb;      /* Azure Blue */
+--color-accent: #f59e0b;       /* Gold */
+--color-success: #10b981;      /* Green */
+--color-danger: #ef4444;       /* Red */
+```
 
-### Accessibility
-- Add `aria-label` to icon-only buttons
-- Use semantic HTML elements (`<nav>`, `<main>`, `<section>`)
-- Ensure keyboard navigation works (Tab, Enter, Escape)
-- Color contrast should meet WCAG AA standards
-- Add `loading="lazy"` to images
+### Responsive Design
+- Mobile-first approach
+- Breakpoints: `sm:640px`, `md:768px`, `lg:1024px`, `xl:1280px`
+- Test all layouts at 375px (mobile) and 1440px (desktop)
 
-### Visual Patterns & Motion
-- **Glassmorphism**: Use `.glass-panel` or `.glass-card` for premium surfaces
-- **Animations**:
-  - `animate-fade-in-up`: Entry animations for text/content
-  - `animate-float`: Gentle hovering for decorative elements
-  - `animate-pulse-slow`: Subtle emphasis for backgrounds
-  - `animate-shimmer`: Gradient text effects
-- **Backgrounds**: Use subtle gradients or grid patterns (`bg-[linear-gradient...]`)
-- **Depth**: Use `shadow-xl`, `backdrop-blur-lg`, and floating elements to create depth
-- **Responsiveness**:
-  - Complex visuals (3D/floating) should be visible on mobile (`block` not `hidden`)
-  - Use `scale-[x]` and `origin-top` to fit large compositions on small screens
-  - Stack layout vertically: Text top, Visuals bottom (`flex-col`)
-  - Ensure sufficient padding/margins (`pb-118`) to prevent overflow clipping
+### Common Patterns
+- Cards: `bg-white rounded-xl shadow-md p-6`
+- Buttons: `px-6 py-3 rounded-lg font-medium transition-colors`
+- Inputs: `w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary`
+- Gradients: Use CSS gradients instead of images
+
+## State Management
+
+### Local State
+- Use `useState` for component-local state
+- Use `useReducer` for complex state logic
+- Keep state as close to where it's used as possible
+
+### Context
+- Auth context: User authentication state
+- Theme context (if needed): Dark/light mode
+- Avoid prop drilling with context
+
+## Firebase Integration
+
+### Authentication
+- Firebase Auth for user management
+- Store user data in Firestore `users` collection
+- Custom claims for role-based access (student, teacher, admin)
+
+### Firestore Structure
+```
+users/{uid}
+  - role: "student" | "teacher" | "admin"
+  - tier: "free" | "paid"
+  - status: "active" | "pending" | "rejected"
+
+courses/{courseId}
+  - teacherId, title, description, category, isPaid, status
+  - materials/{materialId}
+    - title, type, url, isFreePreview, order
+  - questions/{questionId}
+    - userId, content, isAnswered, answerText
+```
+
+### Security
+- Never expose Firebase config in public repos
+- Use environment variables for sensitive data
+- Implement Firestore security rules
+- Validate all user input
+
+## Layout Components
+
+### Navbar
+- Fixed position with backdrop blur
+- Different nav items for student/teacher/admin roles
+- Responsive hamburger menu on mobile
+- Ensure sufficient padding/margins (`pb-118`) to prevent overflow clipping
 
 ## Routing
 
@@ -142,11 +175,164 @@ frontend/
 - Check loading states appear correctly
 - Verify error boundaries catch errors
 
-## Firebase Backend (functions/)
-- Use Express.js for API routes
-- Type definitions in `src/types/`
-- Middleware: `auth.ts` for authentication
-- CORS enabled for frontend communication
+## Backend Architecture (Firebase Functions)
+
+### Directory Structure
+```
+functions/src/
+├── models/         # Database operations (pure functions, no HTTP logic)
+│   ├── user.model.ts
+│   ├── course.model.ts
+│   ├── admin.model.ts
+│   └── question.model.ts
+├── controllers/    # HTTP request handlers (use models for DB operations)
+│   ├── user.controller.ts
+│   ├── course.controller.ts
+│   ├── admin.controller.ts
+│   ├── student.controller.ts
+│   └── question.controller.ts
+├── routes/         # Express route definitions with middleware
+│   ├── user.routes.ts
+│   ├── course.routes.ts
+│   ├── admin.routes.ts
+│   ├── student.routes.ts
+│   └── question.routes.ts
+├── middleware/     # Authentication and authorization
+│   ├── auth.ts
+│   └── roleCheck.ts
+├── config/
+│   └── firebase.ts
+├── types/
+│   └── express.d.ts
+└── index.ts        # Main Express app
+```
+
+### MVC Pattern Rules
+1. **Models** - Pure database operations only
+   - Export functions that interact with Firestore/Auth
+   - No HTTP logic (no `req`, `res` parameters)
+   - Return data or throw errors
+   - Example: `getUserById(uid: string): Promise<UserData | null>`
+
+2. **Controllers** - HTTP request/response handling
+   - Import and use model functions
+   - Handle request validation
+   - Send HTTP responses with appropriate status codes
+   - Catch errors and return user-friendly messages
+   - Example: `getProfile(req: Request, res: Response)`
+
+3. **Routes** - Endpoint definitions with middleware
+   - Define HTTP methods and paths
+   - Apply middleware guards (isAuthenticated, isAdmin, etc.)
+   - Import and use controller functions
+   - Example: `router.get('/me', isAuthenticated, getProfile)`
+
+### API Endpoints
+
+#### User Routes (`/users`)
+- `POST /users/sync` - Sync user after Firebase Auth signup (public)
+- `GET /users/me` - Get authenticated user profile (requires: isAuthenticated)
+
+#### Student Routes (`/students`)
+- `GET /students/courses` - Browse published course catalog (public, supports `?category=grammar|conversation`)
+- `GET /students/courses/:id` - Get single course details (public)
+- `GET /students/courses/:id/materials` - Get materials with tier enforcement (requires: isAuthenticated)
+  - Free tier: Only materials where `isFreePreview = true`
+  - Paid tier: All materials
+
+#### Course Routes (`/courses`) - All require: isAuthenticated + isTeacher
+- `POST /courses` - Create course (draft mode)
+- `PATCH /courses/:courseId` - Update course metadata
+- `DELETE /courses/:courseId` - Delete course
+- `POST /courses/:courseId/materials` - Add material (YouTube/video/quiz/PDF)
+- `PATCH /courses/:courseId/materials/:materialId` - Update material
+- `DELETE /courses/:courseId/materials/:materialId` - Delete material
+- `PATCH /courses/:courseId/publish` - Publish course (checks teacher approval status)
+
+#### Question Routes (`/questions`)
+- `POST /questions/:courseId` - Student asks question (requires: isAuthenticated + isPaidTier)
+- `GET /questions/:courseId` - Get all questions for a course (public)
+- `PATCH /questions/:courseId/:questionId/answer` - Teacher answers question (requires: isAuthenticated + isTeacher)
+- `GET /questions/teacher/unanswered` - Get unanswered questions for teacher's courses (requires: isAuthenticated + isTeacher)
+
+#### Admin Routes (`/admin`) - All require: isAuthenticated + isAdmin
+- `POST /admin/approve-teacher` - Approve/reject teacher registration
+- `POST /admin/manage-subscription` - Manual tier override (free/paid)
+- `DELETE /admin/users/:uid` - Delete user from Auth + Firestore
+- `POST /admin/create-admin` - Create another admin account
+
+### Middleware Guards
+- `isAuthenticated` - Verifies Firebase ID token, attaches `req.user`
+- `isAdmin` - Checks if user role is "admin"
+- `isTeacher` - Checks if user role is "teacher" AND status is "active"
+- `isPaidTier` - Checks if user tier is "paid"
+
+### Data Models
+
+#### UserData (Firestore: `users/{uid}`)
+```typescript
+{
+  uid: string;
+  email: string;
+  role: "student" | "teacher" | "admin";
+  tier: "free" | "paid";
+  status: "active" | "pending" | "rejected";
+  createdAt: string;
+}
+```
+
+#### CourseData (Firestore: `courses/{courseId}`)
+```typescript
+{
+  teacherId: string;
+  title: string;
+  description: string;
+  category: "grammar" | "conversation";
+  isPaid: boolean;
+  status: "draft" | "published";
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+#### MaterialData (Firestore: `courses/{courseId}/materials/{materialId}`)
+```typescript
+{
+  title: string;
+  type: "video" | "youtube" | "quiz" | "pdf";
+  url: string;
+  isFreePreview: boolean;
+  order: number;
+}
+```
+
+#### QuestionData (Firestore: `courses/{courseId}/questions/{questionId}`)
+```typescript
+{
+  courseId: string;
+  userId: string;
+  userName: string;
+  content: string;
+  createdAt: string;
+  isAnswered: boolean;
+  answerText?: string;
+  answeredAt?: string;
+}
+```
+
+### Testing
+- **Framework**: Jest + ts-jest + supertest
+- **Config**: `jest.config.js` in functions directory
+- **Commands**:
+  - `npm test` - Run all tests
+  - `npm run test:watch` - Watch mode
+  - `npm run test:coverage` - Coverage report
+- **Mock Firestore** for unit tests using `jest.mock()`
+
+### Build & Deploy
+- `npm run build` - TypeScript compilation (must pass before deploy)
+- `npm run deploy` - Deploy to Firebase Cloud Functions
+- Entry point: `functions/lib/index.js` (compiled from src/index.ts)
 
 ## Do NOT
 - ❌ Use `window.location.href` for navigation
@@ -156,6 +342,7 @@ frontend/
 - ❌ Skip error boundaries for new features
 - ❌ Forget default exports for lazy-loaded components
 - ❌ Use external image CDNs (e.g., pravatar.cc) - use local/gradient
+- ❌ Make direct database calls in controllers - always use model layer
 
 ## Key Files Reference
 - Component library: `src/components/`

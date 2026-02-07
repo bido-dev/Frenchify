@@ -1,0 +1,686 @@
+{
+    "info": {
+        "name": "Frenchify API",
+        "description": "Complete API collection for Frenchify language learning platform",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "User Routes",
+            "item": [
+                {
+                    "name": "Sync User After Signup",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"uid\": \"test-user-123\",\n  \"email\": \"student@example.com\",\n  \"role\": \"student\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/users/sync",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "sync"
+                            ]
+                        },
+                        "description": "Public endpoint - Called after Firebase Auth signup to create user document in Firestore"
+                    }
+                },
+                {
+                    "name": "Get My Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/users/me",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "users",
+                                "me"
+                            ]
+                        },
+                        "description": "Protected endpoint - Requires authentication. Returns the authenticated user's profile."
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has user data\", function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.have.property('uid');",
+                                    "    pm.expect(jsonData).to.have.property('email');",
+                                    "    pm.expect(jsonData).to.have.property('role');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Student Routes",
+            "item": [
+                {
+                    "name": "Get All Courses",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/students/courses",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "students",
+                                "courses"
+                            ]
+                        },
+                        "description": "Public endpoint - Browse all published courses"
+                    },
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response is an array\", function () {",
+                                    "    var jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData).to.be.an('array');",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "Get Courses by Category",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/students/courses?category=grammar",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "students",
+                                "courses"
+                            ],
+                            "query": [
+                                {
+                                    "key": "category",
+                                    "value": "grammar",
+                                    "description": "Filter by category: grammar or conversation"
+                                }
+                            ]
+                        },
+                        "description": "Public endpoint - Filter courses by category"
+                    }
+                },
+                {
+                    "name": "Get Course by ID",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/students/courses/:courseId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "students",
+                                "courses",
+                                ":courseId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123",
+                                    "description": "Replace with actual course ID"
+                                }
+                            ]
+                        },
+                        "description": "Public endpoint - Get details of a specific course"
+                    }
+                },
+                {
+                    "name": "Get Course Materials",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/students/courses/:courseId/materials",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "students",
+                                "courses",
+                                ":courseId",
+                                "materials"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected endpoint - Get course materials. Free tier sees only preview materials, paid tier sees all."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Course Routes (Teacher)",
+            "item": [
+                {
+                    "name": "Create Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Advanced French Conversation\",\n  \"description\": \"Practice conversational French with real-world scenarios\",\n  \"category\": \"conversation\",\n  \"isPaid\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/courses",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses"
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Creates a new course in draft mode."
+                    }
+                },
+                {
+                    "name": "Update Course",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Course Title\",\n  \"description\": \"Updated description\",\n  \"category\": \"grammar\",\n  \"isPaid\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Update course metadata."
+                    }
+                },
+                {
+                    "name": "Delete Course",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Permanently delete a course."
+                    }
+                },
+                {
+                    "name": "Add Material to Course",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Introduction to French Verbs\",\n  \"type\": \"youtube\",\n  \"url\": \"https://youtube.com/watch?v=example\",\n  \"isFreePreview\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId/materials",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId",
+                                "materials"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Add a material (video/youtube/quiz/pdf) to a course."
+                    }
+                },
+                {
+                    "name": "Update Material",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"title\": \"Updated Material Title\",\n  \"type\": \"video\",\n  \"url\": \"https://example.com/video.mp4\",\n  \"isFreePreview\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId/materials/:materialId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId",
+                                "materials",
+                                ":materialId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                },
+                                {
+                                    "key": "materialId",
+                                    "value": "material123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Update a course material."
+                    }
+                },
+                {
+                    "name": "Delete Material",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId/materials/:materialId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId",
+                                "materials",
+                                ":materialId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                },
+                                {
+                                    "key": "materialId",
+                                    "value": "material123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Delete a course material."
+                    }
+                },
+                {
+                    "name": "Publish Course",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/courses/:courseId/publish",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "courses",
+                                ":courseId",
+                                "publish"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Publish a course (requires teacher to be approved)."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Question Routes",
+            "item": [
+                {
+                    "name": "Ask Question (Paid Tier)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"content\": \"How do I conjugate 'être' in passé composé?\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/questions/:courseId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "questions",
+                                ":courseId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Paid tier only. Student asks a question on a course."
+                    }
+                },
+                {
+                    "name": "Get All Questions for Course",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/questions/:courseId",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "questions",
+                                ":courseId"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                }
+                            ]
+                        },
+                        "description": "Public endpoint - Get all questions for a specific course."
+                    }
+                },
+                {
+                    "name": "Answer Question (Teacher)",
+                    "request": {
+                        "method": "PATCH",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"answerText\": \"To conjugate 'être' in passé composé, you use the auxiliary verb 'avoir' or 'être' plus the past participle 'été'.\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/questions/:courseId/:questionId/answer",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "questions",
+                                ":courseId",
+                                ":questionId",
+                                "answer"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "courseId",
+                                    "value": "course123"
+                                },
+                                {
+                                    "key": "questionId",
+                                    "value": "question123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Answer a student's question."
+                    }
+                },
+                {
+                    "name": "Get Unanswered Questions (Teacher)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/questions/teacher/unanswered",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "questions",
+                                "teacher",
+                                "unanswered"
+                            ]
+                        },
+                        "description": "Protected - Teacher only. Get all unanswered questions for teacher's courses."
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Admin Routes",
+            "item": [
+                {
+                    "name": "Approve/Reject Teacher",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"uid\": \"teacher-uid-123\",\n  \"action\": \"approve\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/approve-teacher",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "approve-teacher"
+                            ]
+                        },
+                        "description": "Protected - Admin only. Approve or reject a teacher registration. Action can be 'approve' or 'reject'."
+                    }
+                },
+                {
+                    "name": "Manage User Subscription",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"uid\": \"user-uid-123\",\n  \"tier\": \"paid\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/manage-subscription",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "manage-subscription"
+                            ]
+                        },
+                        "description": "Protected - Admin only. Manually update a user's subscription tier. Tier can be 'free' or 'paid'."
+                    }
+                },
+                {
+                    "name": "Delete User",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/users/:uid",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "users",
+                                ":uid"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "uid",
+                                    "value": "user-uid-123"
+                                }
+                            ]
+                        },
+                        "description": "Protected - Admin only. Permanently delete a user from both Firebase Auth and Firestore."
+                    }
+                },
+                {
+                    "name": "Create Admin User",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"newadmin@frenchify.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/create-admin",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "create-admin"
+                            ]
+                        },
+                        "description": "Protected - Admin only. Create a new admin user account."
+                    }
+                }
+            ]
+        }
+    ],
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{authToken}}",
+                "type": "string"
+            }
+        ]
+    },
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://127.0.0.1:5001/frechify/us-central1/api",
+            "type": "string"
+        },
+        {
+            "key": "authToken",
+            "value": "",
+            "type": "string"
+        }
+    ]
+}
