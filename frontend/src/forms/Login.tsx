@@ -7,7 +7,7 @@ import { ArrowRight } from 'lucide-react';
 export const Login: React.FC = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
-    const [role, setRole] = useState<'student' | 'teacher'>('student');
+    const [role, setRole] = useState<'student' | 'teacher' | 'admin'>('student');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -15,9 +15,12 @@ export const Login: React.FC = () => {
         // Simulate auth
         setTimeout(() => {
             localStorage.setItem('isAuthenticated', 'true');
+            localStorage.setItem('userRole', role);
             setIsLoading(false);
             if (role === 'teacher') {
                 navigate('/teacher/dashboard');
+            } else if (role === 'admin') {
+                navigate('/admin');
             } else {
                 navigate('/dashboard');
             }
@@ -69,7 +72,7 @@ export const Login: React.FC = () => {
 
                     <div className="space-y-6">
                         {/* Role Selector */}
-                        <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
+                        <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 rounded-lg">
                             <button
                                 type="button"
                                 onClick={() => setRole('student')}
@@ -89,6 +92,16 @@ export const Login: React.FC = () => {
                                     }`}
                             >
                                 Teacher
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setRole('admin')}
+                                className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'admin'
+                                    ? 'bg-white text-gray-900 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-900'
+                                    }`}
+                            >
+                                Admin
                             </button>
                         </div>
 

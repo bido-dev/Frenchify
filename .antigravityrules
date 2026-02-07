@@ -19,12 +19,129 @@ frontend/
 │   ├── components/    # Reusable UI components
 │   ├── pages/         # Student route components
 │   ├── teacherPages/  # Teacher route components
+│   ├── adminPages/    # Admin route components
 │   ├── forms/         # Form components (Login, Register, etc.)
 │   ├── types/         # TypeScript interfaces
 │   ├── utils/         # Helper functions
 │   ├── App.tsx        # Main app with routing
 │   └── index.css      # Tailwind v4 config + global styles
 ```
+
+### Admin Pages Implementation
+
+#### Admin Pages (`src/adminPages/`)
+- **AdminLayout.tsx** - Main admin layout with sidebar navigation
+  - Responsive sidebar with mobile overlay
+  - Navigation items: Teacher Approvals, User Management, Subscriptions, Create Admin
+  - User profile section with logout functionality
+  - Uses `<Outlet />` for nested routes
+  
+- **TeacherApprovals.tsx** - Approve/reject teacher registrations
+  - Displays pending teachers in a DataTable
+  - Actions: Approve (green), Reject (red) with confirmation modal
+  - Mock data with simulated API calls
+  - Uses `PendingTeacher` type from `types/admin.ts`
+  
+- **UserManagement.tsx** - Manage all users
+  - Search functionality with SearchBar component
+  - Display users with role badges (student/teacher/admin)
+  - Tier management: Toggle between free/paid subscriptions
+  - Delete user functionality with confirmation modal
+  - Admin users cannot be modified or deleted
+  - Uses `AdminUser` type from `types/admin.ts`
+  
+- **CreateAdmin.tsx** - Create new admin accounts
+  - Form validation (password match, min 8 characters)
+  - Security notice alert
+  - Success/error state handling
+  - Mock API integration ready
+
+#### Shared Components for Admin
+
+- **DataTable.tsx** - Generic table component
+  - Type-safe with TypeScript generics `<T>`
+  - Column configuration with custom render functions
+  - Loading state with spinner
+  - Empty state with custom message
+  - Hover effects on rows
+  - Responsive with horizontal scroll
+  
+- **Modal.tsx** - Reusable modal dialog
+  - Variants: danger, warning, info, default
+  - Backdrop blur with click-to-close
+  - ESC key to close
+  - Custom footer support
+  - Prevents body scroll when open
+  
+- **ActionButton.tsx** - Styled action buttons
+  - Variants: approve, reject, delete, neutral, primary
+  - Sizes: sm, md
+  - Loading state with spinner
+  - Icon support
+  - Disabled state handling
+  
+- **Badge.tsx** - Status/role badges
+  - Variants: free, pro, neutral, success, warning, danger, info
+  - Used for roles (student/teacher/admin) and tiers (free/paid)
+  - Uppercase text with bold styling
+  
+- **SearchBar.tsx** - Debounced search input
+  - 300ms debounce delay
+  - Clear button when text present
+  - Magnifying glass icon
+  - Controlled component pattern
+
+#### Admin Types (`src/types/admin.ts`)
+
+```typescript
+interface PendingTeacher {
+  uid: string;
+  email: string;
+  name?: string;
+  createdAt: string;
+  status: 'pending';
+}
+
+interface AdminUser {
+  uid: string;
+  email: string;
+  name?: string;
+  role: 'student' | 'teacher' | 'admin';
+  tier: 'free' | 'paid';
+  status: 'active' | 'pending' | 'rejected';
+  createdAt: string;
+}
+
+interface SubscriptionUpdate {
+  uid: string;
+  tier: 'free' | 'paid';
+}
+
+interface TeacherApprovalAction {
+  uid: string;
+  action: 'approve' | 'reject';
+}
+```
+
+#### Admin Authentication Flow
+
+1. **Login** - User selects "Admin" role from Login.tsx
+2. **Role Storage** - `localStorage.setItem('userRole', 'admin')`
+3. **Route Protection** - `PrivateRoute` checks `requiredRole="admin"`
+4. **Redirect** - Admin users navigate to `/admin` (redirects to `/admin/approvals`)
+5. **Layout** - All admin pages wrapped in `AdminLayout` with sidebar
+
+#### Admin Features Summary
+
+- ✅ Teacher approval workflow (approve/reject with modals)
+- ✅ User management (search, view, delete, subscription toggle)
+- ✅ Admin account creation with validation
+- ✅ Responsive design (mobile sidebar, desktop layout)
+- ✅ Type-safe components with TypeScript
+- ✅ Mock data ready for backend integration
+- ✅ Reusable component library (DataTable, Modal, ActionButton, Badge)
+- ✅ Loading and empty states
+- ✅ Error handling and validation
 
 ## Component Guidelines
 
@@ -138,6 +255,7 @@ courses/{courseId}
 - Public: `/`, `/login`, `/register`
 - Student (Protected): `/dashboard`, `/course/:id`, `/profile`
 - Teacher (Protected): `/teacher/dashboard`, `/teacher/course/:id/edit`, `/teacher/questions`
+- Admin (Protected): `/admin` (redirects to `/admin/approvals`), `/admin/users`, `/admin/create-admin`
 
 ### Navigation
 - Use `useNavigate()` hook, NOT `window.location.href`
@@ -346,7 +464,7 @@ functions/src/
 
 ## Key Files Reference
 - Component library: `src/components/`
-- Route components: `src/pages/`, `src/forms/`, `src/teacherPages/`
-- Type definitions: `src/types/course.ts`, `src/types/user.ts`
+- Route components: `src/pages/`, `src/forms/`, `src/teacherPages/`, `src/adminPages/`
+- Type definitions: `src/types/course.ts`, `src/types/user.ts`, `src/types/admin.ts`
 - Styling config: `src/index.css` (Tailwind v4)
 - Main app: `src/App.tsx` (with lazy loading + ErrorBoundary)

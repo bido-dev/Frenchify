@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
@@ -17,6 +17,12 @@ const TeacherDashboard = lazy(() => import('./teacherPages/TeacherDashboard'));
 const CourseEditor = lazy(() => import('./teacherPages/CourseEditor'));
 const MyQuestions = lazy(() => import('./teacherPages/MyQuestions'));
 
+// Admin Pages
+const AdminLayout = lazy(() => import('./adminPages/AdminLayout'));
+const TeacherApprovals = lazy(() => import('./adminPages/TeacherApprovals'));
+const UserManagement = lazy(() => import('./adminPages/UserManagement'));
+const CreateAdmin = lazy(() => import('./adminPages/CreateAdmin'));
+
 function App() {
   return (
     <ErrorBoundary>
@@ -34,10 +40,20 @@ function App() {
             <Route path="/profile" element={<PrivateRoute><Layout><Profile /></Layout></PrivateRoute>} />
 
             {/* Teacher Routes */}
-            <Route path="/teacher/dashboard" element={<PrivateRoute><TeacherLayout><TeacherDashboard /></TeacherLayout></PrivateRoute>} />
-            <Route path="/teacher/questions" element={<PrivateRoute><TeacherLayout><MyQuestions /></TeacherLayout></PrivateRoute>} />
-            <Route path="/teacher/course/:courseId/edit" element={<PrivateRoute><TeacherLayout><CourseEditor /></TeacherLayout></PrivateRoute>} />
-            <Route path="/teacher/course/new" element={<PrivateRoute><TeacherLayout><CourseEditor /></TeacherLayout></PrivateRoute>} />
+            <Route path="/teacher/dashboard" element={<PrivateRoute requiredRole="teacher"><TeacherLayout><TeacherDashboard /></TeacherLayout></PrivateRoute>} />
+            <Route path="/teacher/questions" element={<PrivateRoute requiredRole="teacher"><TeacherLayout><MyQuestions /></TeacherLayout></PrivateRoute>} />
+            <Route path="/teacher/course/:courseId/edit" element={<PrivateRoute requiredRole="teacher"><TeacherLayout><CourseEditor /></TeacherLayout></PrivateRoute>} />
+            <Route path="/teacher/course/new" element={<PrivateRoute requiredRole="teacher"><TeacherLayout><CourseEditor /></TeacherLayout></PrivateRoute>} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<PrivateRoute requiredRole="admin"><AdminLayout /></PrivateRoute>}>
+              <Route index element={<Navigate to="/admin/approvals" replace />} />
+              <Route path="approvals" element={<TeacherApprovals />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="create-admin" element={<CreateAdmin />} />
+              {/* Placeholder for future routes */}
+              <Route path="subscriptions" element={<UserManagement />} />
+            </Route>
           </Routes>
         </Suspense>
       </Router>
