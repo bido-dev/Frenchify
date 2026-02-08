@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { lazy, Suspense } from 'react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Layout } from './components/Layout';
+import { RoleBasedLayout } from './components/RoleBasedLayout';
 import { PrivateRoute } from './components/PrivateRoute';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { TeacherLayout } from './teacherPages/TeacherLayout';
@@ -40,7 +41,7 @@ function App() {
               {/* Protected Routes (Wrapped in Layout) */}
               <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
               <Route path="/course/:courseId" element={<PrivateRoute><Layout><CoursePlayer /></Layout></PrivateRoute>} />
-              <Route path="/profile" element={<PrivateRoute><Layout><Profile /></Layout></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute><RoleBasedLayout><Profile /></RoleBasedLayout></PrivateRoute>} />
 
               {/* Teacher Routes */}
               <Route path="/teacher/pending" element={<PrivateRoute><PendingApproval /></PrivateRoute>} />
