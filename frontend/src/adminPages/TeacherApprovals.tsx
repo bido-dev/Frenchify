@@ -1,55 +1,48 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DataTable, { type Column } from '../components/DataTable';
 import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
+import Toast from '../components/Toast';
 import { Check, X, AlertTriangle } from 'lucide-react';
 import type { PendingTeacher } from '../types/admin';
+import { approveTeacher } from '../api/admin.api';
+import { usePendingTeachers } from '../hooks/usePendingTeachers';
 
-// MOCK DATA
-const MOCK_PENDING_TEACHERS: PendingTeacher[] = [
-    { uid: '1', email: 'marie.curie@science.fr', name: 'Marie Curie', createdAt: '2023-11-15T10:00:00Z', status: 'pending' },
-    { uid: '2', email: 'pierre.dupont@test.com', name: 'Pierre Dupont', createdAt: '2023-11-16T14:30:00Z', status: 'pending' },
-    { uid: '3', email: 'sophie.germain@math.fr', name: 'Sophie Germain', createdAt: '2023-11-17T09:15:00Z', status: 'pending' },
-];
 
 export default function TeacherApprovals() {
+    // Use custom hook for real-time updates
+    const { teachers: fetchedTeachers, loading, error } = usePendingTeachers();
     const [teachers, setTeachers] = useState<PendingTeacher[]>([]);
-    const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
     // Modal state
     const [rejectModalOpen, setRejectModalOpen] = useState(false);
     const [selectedTeacher, setSelectedTeacher] = useState<PendingTeacher | null>(null);
 
-    useEffect(() => {
-        // Simulate API fetch
-        const fetchTeachers = async () => {
-            setLoading(true);
-            try {
-                await new Promise(resolve => setTimeout(resolve, 800));
-                setTeachers(MOCK_PENDING_TEACHERS);
-            } catch (error) {
-                console.error('Error fetching teachers:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    // Toast state
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
-        fetchTeachers();
-    }, []);
+    // Update local state when Firestore data changes
+    useEffect(() => {
+        setTeachers(fetchedTeachers);
+    }, [fetchedTeachers]);
+
+    // Show error toast if Firestore listener fails
+    useEffect(() => {
+        if (error) {
+            setToast({ message: 'Failed to load pending teachers', type: 'error' });
+        }
+    }, [error]);
 
     const handleApprove = async (teacher: PendingTeacher) => {
         setProcessingId(teacher.uid);
         try {
-            // API call would go here: await api.post('/admin/approve-teacher', { uid: teacher.uid, action: 'approve' });
-            await new Promise(resolve => setTimeout(resolve, 600)); // Simulate delay
-
-            // Remove from list
+            await approveTeacher({ uid: teacher.uid, action: 'approve' });
             setTeachers(prev => prev.filter(t => t.uid !== teacher.uid));
-            // Show success toast (placeholder)
-            console.log(`Approved ${teacher.email}`);
+            setToast({ message: `${teacher.name || teacher.email} approved successfully`, type: 'success' });
         } catch (error) {
             console.error('Error approving teacher:', error);
+            setToast({ message: 'Failed to approve teacher', type: 'error' });
         } finally {
             setProcessingId(null);
         }
@@ -67,13 +60,12 @@ export default function TeacherApprovals() {
         setRejectModalOpen(false);
 
         try {
-            // API call: await api.post('/admin/approve-teacher', { uid: selectedTeacher.uid, action: 'reject' });
-            await new Promise(resolve => setTimeout(resolve, 600));
-
+            await approveTeacher({ uid: selectedTeacher.uid, action: 'reject' });
             setTeachers(prev => prev.filter(t => t.uid !== selectedTeacher.uid));
-            console.log(`Rejected ${selectedTeacher.email}`);
+            setToast({ message: `${selectedTeacher.name || selectedTeacher.email} rejected`, type: 'info' });
         } catch (error) {
             console.error('Error rejecting teacher:', error);
+            setToast({ message: 'Failed to reject teacher', type: 'error' });
         } finally {
             setProcessingId(null);
             setSelectedTeacher(null);
@@ -171,6 +163,14 @@ export default function TeacherApprovals() {
                     </div>
                 </div>
             </Modal>
+
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 }

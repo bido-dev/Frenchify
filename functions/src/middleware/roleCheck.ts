@@ -35,9 +35,25 @@ export const isTeacher = async (req: Request, res: Response, next: NextFunction)
         const userDoc = await db.collection("users").doc(uid).get();
         const userData = userDoc.data();
 
-        // Allow Admins to act as Teachers too, if desired
-        if (userData?.role === "teacher" || userData?.role === "admin") {
+        // Admins can always act as teachers
+        if (userData?.role === "admin") {
             next();
+            return;
+        }
+
+        // Teachers must have 'active' status (not 'pending' or 'rejected')
+        if (userData?.role === "teacher" && userData?.status === "active") {
+            next();
+        } else if (userData?.role === "teacher" && userData?.status === "pending") {
+            res.status(403).send({
+                message: "Your teacher account is pending approval. Please wait for admin approval.",
+                status: "pending"
+            });
+        } else if (userData?.role === "teacher" && userData?.status === "rejected") {
+            res.status(403).send({
+                message: "Your teacher account was rejected. Please contact support.",
+                status: "rejected"
+            });
         } else {
             res.status(403).send({ message: "Forbidden: Teachers only" });
         }

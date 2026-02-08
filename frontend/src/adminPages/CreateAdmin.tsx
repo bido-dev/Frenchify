@@ -5,6 +5,7 @@ import { Shield, UserPlus, CheckCircle } from 'lucide-react';
 
 export default function CreateAdmin() {
     const [formData, setFormData] = useState({
+        name: '',
         email: '',
         password: '',
         confirmPassword: ''
@@ -32,11 +33,11 @@ export default function CreateAdmin() {
         setLoading(true);
 
         try {
-            // API call: await api.post('/admin/create-admin', { email: formData.email, password: formData.password });
+            // API call: await api.post('/admin/create-admin', { email: formData.email, password: formData.password, name: formData.name });
             await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
 
             setSuccess(true);
-            setFormData({ email: '', password: '', confirmPassword: '' });
+            setFormData({ name: '', email: '', password: '', confirmPassword: '' });
         } catch (err) {
             setError('Failed to create admin account. Please try again.');
             console.error(err);
@@ -74,6 +75,16 @@ export default function CreateAdmin() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    <Input
+                        label="Full Name"
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Admin Name"
+                        required
+                        autoComplete="off"
+                    />
+
                     <Input
                         label="Email Address"
                         type="email"

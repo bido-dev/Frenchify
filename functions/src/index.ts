@@ -7,6 +7,7 @@ import adminRoutes from "./routes/admin.routes";
 import courseRoutes from "./routes/course.routes";
 import questionRoutes from "./routes/question.routes";
 import studentRoutes from "./routes/student.routes";
+import teacherRoutes from "./routes/teacher.routes";
 
 const app = express();
 
@@ -20,6 +21,7 @@ app.use("/admin", adminRoutes);
 app.use("/courses", courseRoutes);
 app.use("/questions", questionRoutes);
 app.use("/students", studentRoutes);
+app.use("/teachers", teacherRoutes);
 
 // Export the API to Firebase Cloud Functions
 export const api = functions.https.onRequest(app);

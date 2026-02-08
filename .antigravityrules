@@ -16,16 +16,37 @@ Frenchify is a language learning platform for teaching French, with separate stu
 ```
 frontend/
 ├── src/
-│   ├── components/    # Reusable UI components
-│   ├── pages/         # Student route components
-│   ├── teacherPages/  # Teacher route components
-│   ├── adminPages/    # Admin route components
-│   ├── forms/         # Form components (Login, Register, etc.)
-│   ├── types/         # TypeScript interfaces
-│   ├── utils/         # Helper functions
-│   ├── App.tsx        # Main app with routing
-│   └── index.css      # Tailwind v4 config + global styles
+│   ├── api/            # API layer (axios + Firebase integration)
+│   ├── components/     # Reusable UI components
+│   ├── config/         # Configuration files (Firebase, etc.)
+│   ├── contexts/       # React contexts (Auth, etc.)
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Student route components
+│   ├── teacherPages/   # Teacher route components
+│   ├── adminPages/     # Admin route components
+│   ├── forms/          # Form components (Login, Register, etc.)
+│   ├── types/          # TypeScript interfaces
+│   ├── utils/          # Helper functions
+│   ├── App.tsx         # Main app with routing
+│   └── index.css       # Tailwind v4 config + global styles
 ```
+
+### Custom Hooks (`src/hooks/`)
+
+- **usePendingTeachers.ts** - Real-time Firestore listener for pending teachers
+  - Queries `users` collection where `role='teacher'` AND `status='pending'`
+  - Uses `onSnapshot` for WebSocket-based real-time updates
+  - Automatically updates when teachers register or reapply
+  - Returns: `{ teachers, loading, error }`
+  - Auto-cleanup on unmount
+  - Used by admin TeacherApprovals page
+
+- **useUserStatus.ts** - Real-time listener for individual user's status
+  - Listens to user document in Firestore
+  - Detects status changes (pending → active)
+  - Returns: `{ status, loading }`
+  - Used by pending approval page for auto-redirect
+  - Auto-cleanup on unmount
 
 ### Admin Pages Implementation
 
@@ -36,10 +57,13 @@ frontend/
   - User profile section with logout functionality
   - Uses `<Outlet />` for nested routes
   
-- **TeacherApprovals.tsx** - Approve/reject teacher registrations
-  - Displays pending teachers in a DataTable
+- **TeacherApprovals.tsx** - Approve/reject teacher registrations with real-time updates
+  - **Real-time Updates**: Uses `usePendingTeachers` hook with Firestore listeners
+  - Automatically shows new pending teachers when they register or reapply
+  - No polling - uses WebSocket connection for instant updates
   - Actions: Approve (green), Reject (red) with confirmation modal
-  - Mock data with simulated API calls
+  - Toast notifications for success/error feedback
+  - Loading and empty states with friendly messages
   - Uses `PendingTeacher` type from `types/admin.ts`
   
 - **UserManagement.tsx** - Manage all users
@@ -90,6 +114,14 @@ frontend/
   - Clear button when text present
   - Magnifying glass icon
   - Controlled component pattern
+
+- **Toast.tsx** - Notification component for user feedback
+  - Variants: success, error, info
+  - Auto-dismissal with configurable duration (default 3s)
+  - Manual close button
+  - Icons and colors for each variant
+  - Fixed position at top-right
+  - Used for API success/error messages
 
 #### Admin Types (`src/types/admin.ts`)
 
@@ -142,6 +174,286 @@ interface TeacherApprovalAction {
 - ✅ Reusable component library (DataTable, Modal, ActionButton, Badge)
 - ✅ Loading and empty states
 - ✅ Error handling and validation
+
+#### Teacher Approval Workflow
+
+**Complete Flow**: Registration → Pending → Approval/Rejection → Access Control
+
+**1. Teacher Registration**
+- Teacher registers via `/register` with role "teacher"
+- Firebase Auth account created
+- Backend syncs to Firestore with `status: "pending"`
+- Teacher redirected to login
+
+**2. Pending State**
+- Teacher logs in → Auto-redirected to `/teacher/pending` by `PrivateRoute`
+- `PendingApproval.tsx` component shows:
+  - Friendly waiting message with yellow theme
+  - Status badge: "Pending"
+  - Cannot access teacher dashboard or features
+  - Real-time status monitoring via `useUserStatus` hook
+
+**3. Admin Approval Process**
+- Admin views pending teachers in `TeacherApprovals.tsx`
+- Real-time list via `usePendingTeachers` Firestore listener
+- Admin clicks "Approve" or "Reject"
+- Backend updates teacher's status in Firestore
+- Toast notification confirms action
+
+**4. Auto-Redirect on Approval**
+- When admin approves, Firestore updates status to "active"
+- `useUserStatus` hook detects change via real-time listener
+- Success toast appears: "Your account has been approved! Redirecting..."
+- After 1.5 seconds, auto-navigates to `/teacher/dashboard`
+- Teacher now has full access to all teacher features
+
+**5. Rejection and Reapplication**
+- Rejected teachers see red-themed page with rejection message
+- "Reapply for Teacher Account" button appears
+- Clicking reapply calls `POST /users/reapply`
+- Status changes from "rejected" → "pending"
+- UI updates to yellow pending theme
+- Teacher appears in admin's pending list instantly (real-time)
+
+**Access Control**:
+- **Backend**: `isTeacher` middleware checks `status === "active"`
+- **Frontend**: `PrivateRoute` redirects pending/rejected teachers
+- Teachers cannot bypass by URL manipulation (enforced on both ends)
+
+**Real-Time Features**:
+- Admin sees new registrations/reapplications without page refresh
+- Teacher sees approval and redirects automatically
+- Uses Firestore WebSocket listeners (no polling)
+- Efficient: Single connection per user
+
+
+### API Organization & Authentication
+
+#### API Layer (`src/api/`)
+
+The frontend uses a centralized API layer with axios for all HTTP requests:
+
+- **index.ts** - Central axios instance
+  - Base URL from `VITE_API_URL` environment variable
+  - Request interceptor: Automatically attaches Firebase ID token to all authenticated requests
+  - Response interceptor: Handles 401 errors and redirects to login
+  - 10-second timeout for all requests
+  
+- **auth.api.ts** - Authentication endpoints
+  - `signup(data)` - Register with email/password and role (student/teacher)
+  - `login(email, password)` - Sign in with email/password
+  - `loginWithGoogle()` - Google OAuth sign-in
+  - `logout()` - Sign out and clear localStorage
+  - `getCurrentUser()` - Fetch user profile from backend
+  - Returns `UserData` interface with role, tier, and status
+  
+- **student.api.ts** - Student features
+  - `getCourses(category?)` - Browse course catalog with optional filter
+  - `getCourse(courseId)` - Get single course details
+  - `getCourseMaterials(courseId)` - Get materials (tier-enforced by backend)
+  - `askQuestion(courseId, content)` - Post question (paid tier only)
+  - `getCourseQuestions(courseId)` - Get all Q&A for a course
+  - `getStudentStats()` - Get student statistics (enrolled, completed, hours, streak)
+  - `getEnrolledCourses()` - Get enrolled courses with progress
+  - Returns `StudentStats` and `EnrolledCourse` interfaces
+  
+- **teacher.api.ts** - Teacher features
+  - `getTeacherStats()` - Get teaching statistics (courses created, total students, pending questions)
+  - `getTeacherCourses()` - Get teacher's courses with enrollment counts
+  - Returns `TeacherStats` and `TeacherCourse` interfaces
+  
+- **admin.api.ts** - Admin features
+  - `getPendingTeachers()` - Fetch pending teachers (for initial load, real-time uses Firestore)
+  - `approveTeacher(data)` - Approve/reject teacher applications
+  - `updateSubscription(data)` - Manage user subscription tiers
+  - `deleteUser(uid)` - Remove user account
+  - `createAdmin(email, password)` - Create new admin account
+
+#### Firebase Configuration (`src/config/`)
+
+- **firebase.ts** - Firebase client initialization
+  - Uses environment variables for credentials:
+    - `VITE_FIREBASE_API_KEY`
+    - `VITE_FIREBASE_AUTH_DOMAIN`
+    - `VITE_FIREBASE_PROJECT_ID`
+    - `VITE_FIREBASE_STORAGE_BUCKET`
+    - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+    - `VITE_FIREBASE_APP_ID`
+    - `VITE_USE_EMULATOR` - Set to 'true' for local development
+  - Exports `auth` instance for authentication
+  - Exports `db` (Firestore) instance for real-time data
+  - Emulator configuration:
+    - Auth Emulator: `localhost:9099`
+    - Firestore Emulator: `localhost:8080`
+
+#### Authentication Context (`src/contexts/`)
+
+- **AuthContext.tsx** - Global authentication state
+  - Listens to Firebase auth state via `onAuthStateChanged`
+  - Fetches user data from backend when authenticated
+  - Provides `useAuth()` hook for components
+  - Context values:
+    - `user` - UserData from backend (role, tier, status)
+    - `firebaseUser` - Firebase User object
+    - `loading` - Boolean for initial auth check
+    - `refreshUser()` - Function to manually refresh user data
+
+#### Authentication Flow
+
+**Registration:**
+1. User fills form and selects role (student/teacher)
+2. Firebase creates auth account via `createUserWithEmailAndPassword()`
+3. Backend syncs user to Firestore via `POST /users/sync`
+4. Students get `tier: "free"`, `status: "active"`
+5. Teachers get `tier: "free"`, `status: "pending"` (awaiting admin approval)
+6. User redirected to login page
+
+**Login:**
+1. User enters credentials
+2. Firebase authenticates via `signInWithEmailAndPassword()`
+3. Frontend fetches user data via `GET /users/me` (with ID token)
+4. AuthContext updates with user data
+5. User redirected based on role:
+   - Admin → `/admin`
+   - Teacher → `/teacher/dashboard`
+   - Student → `/dashboard` (or preserved `from` location)
+
+**Google Sign-In:**
+1. User clicks "Continue with Google"
+2. Firebase handles OAuth via `signInWithPopup()`
+3. Backend syncs user with `role: "student"` by default
+4. User redirected to dashboard
+
+**Protected Routes:**
+1. `PrivateRoute` component checks `useAuth()` context
+2. If loading, shows spinner
+3. If not authenticated, redirects to `/login` with `from` state
+4. If wrong role, redirects to appropriate dashboard
+5. If authorized, renders protected content
+
+#### API Request Flow
+
+All authenticated requests automatically include the Firebase ID token:
+
+```typescript
+// Request interceptor in api/index.ts
+api.interceptors.request.use(async (config) => {
+  const user = auth.currentUser;
+  if (user) {
+    const token = await user.getIdToken();
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
+
+Backend verifies the token and attaches user data to `req.user`.
+
+#### Race Condition Prevention
+
+**Problem**: Firebase Auth state updates asynchronously, causing `auth.currentUser` to be `null` immediately after login, which resulted in API calls without tokens.
+
+**Solution** (implemented in `auth.api.ts` and `AuthContext.tsx`):
+
+1. **Explicit Token Passing**: Get the token directly from `userCredential` returned by Firebase Auth instead of relying on `auth.currentUser`:
+```typescript
+const userCredential = await signInWithEmailAndPassword(auth, email, password);
+const token = await userCredential.user.getIdToken();
+const response = await api.get('/users/me', {
+    headers: { Authorization: `Bearer ${token}` }
+});
+```
+
+2. **AuthContext Retry Logic**: The context waits for token readiness and retries API calls:
+```typescript
+await firebaseUser.getIdToken(); // Ensures token is ready
+let retries = 3;
+while (retries > 0 && !userData) {
+    try {
+        userData = await getCurrentUser();
+    } catch (error) {
+        retries--;
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+}
+```
+
+3. **No Hard Redirects on 401**: The API interceptor should NOT use `window.location.href` for redirects as it breaks React state. Let `PrivateRoute` handle auth redirects via React Router.
+
+#### Updated Components
+
+**App.tsx:**
+- Wrapped with `<AuthProvider>` to provide auth context to all routes
+- All components now have access to `useAuth()` hook
+
+**PrivateRoute.tsx:**
+- Uses `useAuth()` instead of localStorage
+- Shows loading spinner during auth check
+- Redirects based on authentication state and role
+- **Teacher Status Control**:
+  - Pending teachers → `/teacher/pending`
+  - Rejected teachers → `/teacher/pending` (with reapply option)
+  - Active teachers → Full access to teacher routes
+
+**Login.tsx:**
+- Real Firebase authentication (no more mock)
+- Email/password login via `login()` API
+- Google sign-in via `loginWithGoogle()` API
+- Error handling with user-friendly messages
+- Role-based redirect after successful login
+- Removed role selector (role determined by backend)
+
+**Register.tsx:**
+- Real Firebase registration (no more mock)
+- Role selector (Student/Teacher)
+- Email/password registration via `signup()` API
+- Password confirmation validation
+- Minimum 8 characters password requirement
+- Teacher approval notification
+- Error handling with user-friendly messages
+- Redirects to login after successful registration
+
+#### Environment Variables
+
+Create `.env` file in `frontend/` directory:
+
+```bash
+# Firebase Configuration
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project_id.appspot.com
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+
+# API Configuration
+VITE_API_URL=http://localhost:5001/frenchify/us-central1/api
+```
+
+#### Type Definitions
+
+**UserData** (from `api/auth.api.ts`):
+```typescript
+interface UserData {
+  uid: string;
+  email: string;
+  name?: string;
+  role: 'student' | 'teacher' | 'admin';
+  tier: 'free' | 'paid';
+  status: 'active' | 'pending' | 'rejected';
+  createdAt: string;
+}
+```
+
+**SignupData** (from `api/auth.api.ts`):
+```typescript
+interface SignupData {
+  email: string;
+  password: string;
+  role: 'student' | 'teacher';
+  name?: string;
+}
+```
 
 ## Component Guidelines
 
@@ -208,8 +520,11 @@ export default function ComponentName({ prop1, prop2 }: ComponentProps) {
 - Use `useReducer` for complex state logic
 - Keep state as close to where it's used as possible
 
-### Context
-- Auth context: User authentication state
+### Global Context
+- **AuthContext** (`src/contexts/AuthContext.tsx`): User authentication state
+  - Provides `useAuth()` hook
+  - Values: `user`, `firebaseUser`, `loading`, `refreshUser()`
+  - Automatically syncs with Firebase Auth
 - Theme context (if needed): Dark/light mode
 - Avoid prop drilling with context
 
@@ -295,25 +610,29 @@ courses/{courseId}
 
 ## Backend Architecture (Firebase Functions)
 
-### Directory Structure
 ```
 functions/src/
 ├── models/         # Database operations (pure functions, no HTTP logic)
 │   ├── user.model.ts
 │   ├── course.model.ts
 │   ├── admin.model.ts
-│   └── question.model.ts
+│   ├── question.model.ts
+│   ├── enrollment.model.ts  # Student course enrollments
+│   ├── student.model.ts     # Student statistics
+│   └── teacher.model.ts     # Teacher statistics
 ├── controllers/    # HTTP request handlers (use models for DB operations)
 │   ├── user.controller.ts
 │   ├── course.controller.ts
 │   ├── admin.controller.ts
 │   ├── student.controller.ts
+│   ├── teacher.controller.ts
 │   └── question.controller.ts
 ├── routes/         # Express route definitions with middleware
 │   ├── user.routes.ts
 │   ├── course.routes.ts
 │   ├── admin.routes.ts
 │   ├── student.routes.ts
+│   ├── teacher.routes.ts
 │   └── question.routes.ts
 ├── middleware/     # Authentication and authorization
 │   ├── auth.ts
@@ -322,8 +641,54 @@ functions/src/
 │   └── firebase.ts
 ├── types/
 │   └── express.d.ts
-└── index.ts        # Main Express app
+├── seed.ts                 # Emulator seed script (creates admin user)
+├── seed-enrollments.ts     # Seed script for test data (students, teachers, courses, enrollments)
+└── index.ts                # Main Express app
 ```
+
+### Emulator Seed Script
+
+**Purpose**: Creates a hardcoded admin user in Firebase Auth + Firestore for development/testing.
+
+**File**: `functions/src/seed.ts`
+
+**Admin Credentials**:
+| Field | Value |
+|-------|-------|
+| Email | `admin@frenchify.com` |
+| Password | `admin123456` |
+| Name | `System Admin` |
+| Role | `admin` |
+
+**Usage**:
+1. Start emulators: `firebase emulators:start`
+2. In another terminal: `cd functions && npm run seed`
+
+**Important**: 
+- The script uses project ID from `.firebaserc` (currently `frechify`)
+- Emulator data is **ephemeral** - run seed after each emulator restart
+- The script is idempotent (safe to run multiple times)
+
+### Test Data Seed Script
+
+**Purpose**: Creates test users, courses, enrollments, and questions for testing profile stats.
+
+**File**: `functions/src/seed-enrollments.ts`
+
+**Test Accounts**:
+| Email | Password | Role | Tier | Status |
+|-------|----------|------|------|--------|
+| `student@test.com` | `test1234` | student | paid | active |
+| `teacher@test.com` | `test1234` | teacher | free | active |
+
+**Sample Data Created**:
+- 3 courses (2 published, 1 draft)
+- 2 enrollments for student (1 in progress, 1 completed)
+- 2 questions (1 pending, 1 answered)
+
+**Usage**:
+1. Start emulators and run admin seed first
+2. Run: `cd functions && npm run seed:enrollments`
 
 ### MVC Pattern Rules
 1. **Models** - Pure database operations only
@@ -350,6 +715,7 @@ functions/src/
 #### User Routes (`/users`)
 - `POST /users/sync` - Sync user after Firebase Auth signup (public)
 - `GET /users/me` - Get authenticated user profile (requires: isAuthenticated)
+- `POST /users/reapply` - Reapply for teacher account (rejected → pending) (requires: isAuthenticated)
 
 #### Student Routes (`/students`)
 - `GET /students/courses` - Browse published course catalog (public, supports `?category=grammar|conversation`)
@@ -357,6 +723,8 @@ functions/src/
 - `GET /students/courses/:id/materials` - Get materials with tier enforcement (requires: isAuthenticated)
   - Free tier: Only materials where `isFreePreview = true`
   - Paid tier: All materials
+- `GET /students/stats` - Get student statistics (requires: isAuthenticated)
+- `GET /students/enrolled` - Get enrolled courses with progress (requires: isAuthenticated)
 
 #### Course Routes (`/courses`) - All require: isAuthenticated + isTeacher
 - `POST /courses` - Create course (draft mode)
@@ -373,7 +741,12 @@ functions/src/
 - `PATCH /questions/:courseId/:questionId/answer` - Teacher answers question (requires: isAuthenticated + isTeacher)
 - `GET /questions/teacher/unanswered` - Get unanswered questions for teacher's courses (requires: isAuthenticated + isTeacher)
 
+#### Teacher Routes (`/teachers`) - All require: isAuthenticated + isTeacher
+- `GET /teachers/stats` - Get teaching statistics (courses created, total students, pending questions)
+- `GET /teachers/courses` - Get teacher's courses with enrollment counts
+
 #### Admin Routes (`/admin`) - All require: isAuthenticated + isAdmin
+- `GET /admin/pending-teachers` - Get list of pending teacher applications
 - `POST /admin/approve-teacher` - Approve/reject teacher registration
 - `POST /admin/manage-subscription` - Manual tier override (free/paid)
 - `DELETE /admin/users/:uid` - Delete user from Auth + Firestore
@@ -392,6 +765,7 @@ functions/src/
 {
   uid: string;
   email: string;
+  name?: string;
   role: "student" | "teacher" | "admin";
   tier: "free" | "paid";
   status: "active" | "pending" | "rejected";
@@ -438,6 +812,19 @@ functions/src/
 }
 ```
 
+#### EnrollmentData (Firestore: `enrollments/{enrollmentId}`)
+```typescript
+{
+  userId: string;
+  courseId: string;
+  enrolledAt: string;
+  progress: number;        // 0-100
+  completedAt?: string;   // Set when progress reaches 100
+  totalHours: number;
+  lastAccessedAt?: string;
+}
+```
+
 ### Testing
 - **Framework**: Jest + ts-jest + supertest
 - **Config**: `jest.config.js` in functions directory
@@ -461,10 +848,15 @@ functions/src/
 - ❌ Forget default exports for lazy-loaded components
 - ❌ Use external image CDNs (e.g., pravatar.cc) - use local/gradient
 - ❌ Make direct database calls in controllers - always use model layer
+- ❌ Use localStorage for authentication - use AuthContext
 
 ## Key Files Reference
-- Component library: `src/components/`
-- Route components: `src/pages/`, `src/forms/`, `src/teacherPages/`, `src/adminPages/`
-- Type definitions: `src/types/course.ts`, `src/types/user.ts`, `src/types/admin.ts`
-- Styling config: `src/index.css` (Tailwind v4)
-- Main app: `src/App.tsx` (with lazy loading + ErrorBoundary)
+- **API layer**: `src/api/` (index.ts, auth.api.ts, student.api.ts, admin.api.ts)
+- **Configuration**: `src/config/firebase.ts`, `.env`
+- **Contexts**: `src/contexts/AuthContext.tsx`
+- **Component library**: `src/components/`
+- **Route components**: `src/pages/`, `src/forms/`, `src/teacherPages/`, `src/adminPages/`
+- **Type definitions**: `src/types/course.ts`, `src/types/user.ts`, `src/types/admin.ts`
+- **Styling config**: `src/index.css` (Tailwind v4)
+- **Main app**: `src/App.tsx` (with lazy loading + ErrorBoundary + AuthProvider)
+

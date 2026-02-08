@@ -8,6 +8,7 @@ import { db } from "../config/firebase";
 export interface UserData {
     uid: string;
     email: string;
+    name?: string;
     role: "student" | "teacher";
     tier: "free" | "paid";
     status: "active" | "pending" | "rejected";
@@ -19,23 +20,35 @@ export interface UserData {
  * @param uid - User ID from Firebase Auth
  * @param email - User email
  * @param role - User role (student or teacher)
+ * @param name - Optional user full name
  * @returns Promise<void>
  */
 export const createOrUpdateUser = async (
     uid: string,
     email: string,
-    role: "student" | "teacher" = "student"
+    role: "student" | "teacher" = "student",
+    name?: string
 ): Promise<void> => {
+    console.log(`Creating/updating user: ${uid}, ${email}, ${role}, ${name || 'no name'}`);
     const userRef = db.collection("users").doc(uid);
 
-    await userRef.set({
+    const userData: any = {
         uid,
         email,
         role,
         tier: "free", // ALWAYS default to free [PRD 3.1]
         createdAt: new Date().toISOString(),
         status: role === "teacher" ? "pending" : "active" // Teachers need approval [PRD 3.4]
-    }, { merge: true });
+    };
+
+    // Add name if provided
+    if (name) {
+        userData.name = name;
+    }
+
+    await userRef.set(userData, { merge: true });
+
+    console.log(`User ${uid} saved successfully`);
 };
 
 /**

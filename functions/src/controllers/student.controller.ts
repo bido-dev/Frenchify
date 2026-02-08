@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getCourseById } from "../models/course.model";
 import { db } from "../config/firebase";
+import { getStudentStats, getStudentEnrolledCourses } from "../models/student.model";
 
 /**
  * Get all published courses (Public endpoint)
@@ -86,3 +87,44 @@ export const getCourseMaterials = async (req: Request, res: Response) => {
         res.status(500).send({ message: "Error fetching materials" });
     }
 };
+
+/**
+ * Get student statistics
+ * GET /students/stats
+ * Requires authentication
+ */
+export const getStats = async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            res.status(401).send({ message: "Unauthorized" });
+            return;
+        }
+
+        const stats = await getStudentStats(req.user.uid);
+        res.status(200).send(stats);
+    } catch (error) {
+        console.error("Error fetching student stats:", error);
+        res.status(500).send({ message: "Error fetching student stats" });
+    }
+};
+
+/**
+ * Get student's enrolled courses
+ * GET /students/enrolled
+ * Requires authentication
+ */
+export const getEnrolledCourses = async (req: Request, res: Response) => {
+    try {
+        if (!req.user) {
+            res.status(401).send({ message: "Unauthorized" });
+            return;
+        }
+
+        const enrolledCourses = await getStudentEnrolledCourses(req.user.uid);
+        res.status(200).send(enrolledCourses);
+    } catch (error) {
+        console.error("Error fetching enrolled courses:", error);
+        res.status(500).send({ message: "Error fetching enrolled courses" });
+    }
+};
+

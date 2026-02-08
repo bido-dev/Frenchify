@@ -3,24 +3,63 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Star } from 'lucide-react';
+import { signup } from '../api/auth.api';
 
 export const Register: React.FC = () => {
     const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [role, setRole] = useState<'student' | 'teacher'>('student');
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        password: '',
+        confirmPassword: '',
+    });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setError(null);
+
+        // Validation
+        if (formData.password !== formData.confirmPassword) {
+            setError('Passwords do not match');
+            return;
+        }
+
+        if (formData.password.length < 8) {
+            setError('Password must be at least 8 characters');
+            return;
+        }
+
         setIsLoading(true);
-        // Simulate auth
-        setTimeout(() => {
+
+        try {
+            const userData = await signup({
+                email: formData.email,
+                password: formData.password,
+                role,
+                name: formData.name,
+            });
+
+            // Show message for teachers about approval
+            if (userData.role === 'teacher' && userData.status === 'pending') {
+                alert('Your teacher account has been created! An administrator will review your application. You can log in, but you won\'t be able to publish courses until approved.');
+            }
+
+            // Redirect to login
+            navigate('/login');
+        } catch (err: any) {
+            console.error('Registration error:', err);
+            setError(err.response?.data?.message || err.message || 'Failed to create account. Please try again.');
+        } finally {
             setIsLoading(false);
-            navigate('/dashboard');
-        }, 1000);
+        }
     };
 
     return (
         <div className="min-h-screen grid lg:grid-cols-2">
-            {/* Left: Branding/Art - Different variant for Register */}
+            {/* Left: Branding/Art */}
             <div className="hidden lg:flex flex-col justify-between bg-gray-900 p-12 text-white relative overflow-hidden">
                 <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1499856871940-a09627c6dcf6?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40"></div>
 
@@ -74,28 +113,92 @@ export const Register: React.FC = () => {
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input label="First name" type="text" placeholder="Pierre" required />
-                            <Input label="Last name" type="text" placeholder="Dupont" required />
-                        </div>
-
-                        <Input label="Email address" type="email" placeholder="you@example.com" required />
-                        <Input label="Password" type="password" placeholder="Min. 8 characters" required />
-
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-5 items-center">
-                                <input id="terms" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" required />
+                    <div className="space-y-6">
+                        {/* Role Selector */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">I am a</label>
+                            <div className="grid grid-cols-2 gap-2 p-1 bg-gray-100 rounded-lg">
+                                <button
+                                    type="button"
+                                    onClick={() => setRole('student')}
+                                    className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'student'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                        }`}
+                                >
+                                    Student
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setRole('teacher')}
+                                    className={`py-2 text-sm font-medium rounded-md transition-all ${role === 'teacher'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                        }`}
+                                >
+                                    Teacher
+                                </button>
                             </div>
-                            <label htmlFor="terms" className="text-sm text-gray-500">
-                                I agree to the <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Terms of Service</a> and <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Privacy Policy</a>
-                            </label>
                         </div>
 
-                        <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
-                            Create Account
-                        </Button>
-                    </form>
+                        {error && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <Input
+                                label="Full Name"
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="John Doe"
+                                required
+                            />
+
+                            <Input
+                                label="Email address"
+                                type="email"
+                                value={formData.email}
+                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="you@example.com"
+                                required
+                            />
+
+                            <Input
+                                label="Password"
+                                type="password"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                placeholder="Min. 8 characters"
+                                required
+                                minLength={8}
+                            />
+
+                            <Input
+                                label="Confirm Password"
+                                type="password"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
+                                placeholder="Re-enter password"
+                                required
+                            />
+
+                            <div className="flex items-start gap-3">
+                                <div className="flex h-5 items-center">
+                                    <input id="terms" type="checkbox" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" required />
+                                </div>
+                                <label htmlFor="terms" className="text-sm text-gray-500">
+                                    I agree to the <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Terms of Service</a> and <a href="#" className="font-medium text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                                </label>
+                            </div>
+
+                            <Button type="submit" className="w-full" size="lg" isLoading={isLoading}>
+                                Create Account
+                            </Button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>

@@ -7,6 +7,38 @@ import { db } from "../config/firebase";
  * Wraps user model functions with admin context
  */
 
+export interface PendingTeacherData {
+    uid: string;
+    email: string;
+    name?: string;
+    createdAt: string;
+    status: "pending";
+}
+
+/**
+ * Get all pending teachers awaiting approval
+ * @returns Promise<PendingTeacherData[]>
+ */
+export const getPendingTeachers = async (): Promise<PendingTeacherData[]> => {
+    const snapshot = await db
+        .collection("users")
+        .where("role", "==", "teacher")
+        .where("status", "==", "pending")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+            uid: doc.id,
+            email: data.email,
+            name: data.name,
+            createdAt: data.createdAt,
+            status: "pending" as const
+        };
+    });
+};
+
 /**
  * Update teacher status (approve/reject)
  * @param uid - Teacher's UID
@@ -50,11 +82,13 @@ export const deleteUserAccount = async (uid: string): Promise<void> => {
  * Create a new admin account (Admin-only operation per PRD 3.4)
  * @param email - Admin email
  * @param password - Admin password
+ * @param name - Optional admin full name
  * @returns Promise<string> - New admin UID
  */
 export const createAdmin = async (
     email: string,
-    password: string
+    password: string,
+    name?: string
 ): Promise<string> => {
     // Create user in Firebase Auth
     const userRecord = await auth.createUser({
@@ -64,14 +98,21 @@ export const createAdmin = async (
     });
 
     // Create user document in Firestore with admin role
-    await db.collection("users").doc(userRecord.uid).set({
+    const adminData: any = {
         uid: userRecord.uid,
         email,
         role: "admin",
         tier: "paid", // Admins get paid tier by default
         status: "active",
         createdAt: new Date().toISOString()
-    });
+    };
+
+    // Add name if provided
+    if (name) {
+        adminData.name = name;
+    }
+
+    await db.collection("users").doc(userRecord.uid).set(adminData);
 
     return userRecord.uid;
 };
