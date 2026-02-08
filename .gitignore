@@ -25,3 +25,4 @@ Thumbs.db
 # Backend Compiled Code
 functions/lib/
 frontend/package-lock.json
+frontend/.env.production

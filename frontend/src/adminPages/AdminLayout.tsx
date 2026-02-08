@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
-import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, Outlet, useNavigate, NavLink } from 'react-router-dom';
 import {
     Users,
-    UserCheck,
-    Settings,
     LogOut,
     Menu,
     X,
     CreditCard,
-    LayoutDashboard
+    UserCheck,
+    Settings
 } from 'lucide-react';
-// import { useAuth } from '../hooks/useAuth'; // Assuming this exists or will exist
+import { useState } from 'react';
 
 export default function AdminLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -74,7 +72,7 @@ export default function AdminLayout() {
                                 key={item.path}
                                 to={item.path}
                                 onClick={() => setIsSidebarOpen(false)}
-                                className={({ isActive }) => `
+                                className={({ isActive }: { isActive: boolean }) => `
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors
                   ${isActive
                                         ? 'bg-blue-50 text-blue-700'

@@ -1,4 +1,4 @@
-import React, { type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 import { LoadingSpinner } from './LoadingSpinner';
 import { EmptyState } from './EmptyState';

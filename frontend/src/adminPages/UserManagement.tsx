@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import DataTable, { type Column } from '../components/DataTable';
 import ActionButton from '../components/ActionButton';
-import SearchBar from '../components/SearchBar';
 import Modal from '../components/Modal';
 import { Badge } from '../components/Badge';
-import { Trash2, CreditCard, AlertTriangle, Shield, User } from 'lucide-react';
+import SearchBar from '../components/SearchBar';
+import { Trash2, AlertTriangle, CreditCard } from 'lucide-react';
 import type { AdminUser } from '../types/admin';
 
 // MOCK DATA

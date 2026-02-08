@@ -61,7 +61,7 @@ export default function ActionButton({
             {...props}
         >
             {loading ? (
-                <LoadingSpinner size="sm" color={variant === 'primary' ? 'white' : 'currentColor'} />
+                <LoadingSpinner size="sm" />
             ) : icon ? (
                 <span className="shrink-0">{icon}</span>
             ) : null}
