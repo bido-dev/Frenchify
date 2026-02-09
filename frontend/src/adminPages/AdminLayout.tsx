@@ -1,4 +1,6 @@
 import { useLocation, Outlet, useNavigate, NavLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { logout } from '../api/auth.api';
 import {
     Users,
     LogOut,
@@ -12,13 +14,17 @@ import { useState } from 'react';
 
 export default function AdminLayout() {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-    // const { logout } = useAuth(); // Placeholder
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
     const handleLogout = async () => {
-        // await logout();
-        navigate('/login');
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
     };
 
     const navItems = [
@@ -92,8 +98,8 @@ export default function AdminLayout() {
                                 AD
                             </div>
                             <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">Admin User</p>
-                                <p className="text-xs text-gray-500 truncate">admin@frenchify.com</p>
+                                <p className="text-sm font-medium text-gray-900 truncate">{user?.name || 'Admin User'}</p>
+                                <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                             </div>
                         </div>
                         <button

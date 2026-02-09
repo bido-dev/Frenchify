@@ -12,6 +12,14 @@ export interface SubscriptionUpdate {
 }
 
 /**
+ * Get all users (admin only)
+ */
+export const getAllUsers = async (): Promise<any[]> => {
+    const response = await api.get('/admin/users');
+    return response.data;
+};
+
+/**
  * Get all pending teachers awaiting approval
  */
 export const getPendingTeachers = async (): Promise<PendingTeacher[]> => {
@@ -43,6 +51,6 @@ export const deleteUser = async (uid: string): Promise<void> => {
 /**
  * Create admin account
  */
-export const createAdmin = async (email: string, password: string): Promise<void> => {
-    await api.post('/admin/create-admin', { email, password });
+export const createAdmin = async (email: string, password: string, name?: string): Promise<void> => {
+    await api.post('/admin/create-admin', { email, password, name });
 };

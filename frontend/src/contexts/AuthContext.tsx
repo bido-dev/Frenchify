@@ -41,15 +41,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                     await firebaseUser.getIdToken();
                     console.log('Token ready, fetching user data from backend...');
 
-                    // Retry logic for race conditions
+                    // Retry logic for race conditions (max 3 attempts)
                     let retries = 3;
                     let userData = null;
+                    let lastError = null;
 
                     while (retries > 0 && !userData) {
                         try {
                             userData = await getCurrentUser();
                             console.log('User data received:', userData);
-                        } catch (error) {
+                        } catch (error: any) {
+                            lastError = error;
                             retries--;
                             if (retries > 0) {
                                 console.log(`Retrying... (${retries} attempts left)`);
@@ -58,7 +60,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         }
                     }
 
-                    setUser(userData);
+                    if (userData) {
+                        setUser(userData);
+                    } else {
+                        // Backend is unavailable after retries
+                        console.error('Failed to fetch user data after retries:', lastError);
+
+                        // Check if it's a CORS or network error
+                        const isCorsOrNetworkError =
+                            lastError?.message?.includes('Network Error') ||
+                            lastError?.message?.includes('CORS') ||
+                            lastError?.code === 'ERR_NETWORK';
+
+                        if (isCorsOrNetworkError) {
+                            console.warn('Backend appears to be unavailable. Signing out user to prevent infinite loops.');
+                            // Sign out to prevent infinite retry loops
+                            await auth.signOut();
+                            setUser(null);
+                            setFirebaseUser(null);
+                        } else {
+                            // Other errors - set user to null but keep firebase auth
+                            setUser(null);
+                        }
+                    }
                 } catch (error) {
                     console.error('Error fetching user data:', error);
                     setUser(null);

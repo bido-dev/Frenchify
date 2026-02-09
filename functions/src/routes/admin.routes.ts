@@ -4,7 +4,8 @@ import {
     manageSubscription,
     deleteUser,
     createAdminUser,
-    getPendingTeachers
+    getPendingTeachers,
+    getAllUsers
 } from "../controllers/admin.controller";
 import { isAuthenticated } from "../middleware/auth";
 import { isAdmin } from "../middleware/roleCheck";
@@ -14,6 +15,7 @@ const router = Router();
 // Apply "Security Guards" to all routes in this file
 router.use(isAuthenticated, isAdmin);
 
+router.get("/users", getAllUsers); // [PRD 3.4]
 router.get("/pending-teachers", getPendingTeachers); // [PRD 3.4]
 router.post("/approve-teacher", handleTeacherApproval); // [PRD 3.4]
 router.post("/manage-subscription", manageSubscription); // [PRD 9.C]

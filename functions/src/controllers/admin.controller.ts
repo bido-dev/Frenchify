@@ -4,7 +4,8 @@ import {
     updateUserSubscription,
     deleteUserAccount,
     createAdmin,
-    getPendingTeachers as getPendingTeachersModel
+    getPendingTeachers as getPendingTeachersModel,
+    getAllUsers as getAllUsersModel
 } from "../models/admin.model";
 
 // 0. Get Pending Teachers [PRD 3.4, 9.C]
@@ -15,6 +16,17 @@ export const getPendingTeachers = async (req: Request, res: Response) => {
     } catch (error) {
         console.error("Error fetching pending teachers:", error);
         res.status(500).send({ message: "Error fetching pending teachers" });
+    }
+};
+
+// 0.1. Get All Users [PRD 3.4]
+export const getAllUsers = async (req: Request, res: Response) => {
+    try {
+        const users = await getAllUsersModel();
+        res.status(200).send(users);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        res.status(500).send({ message: "Error fetching users" });
     }
 };
 
@@ -63,12 +75,34 @@ export const deleteUser = async (req: Request, res: Response) => {
     try {
         const { uid } = req.params as { uid: string };
 
+        // Import db for user lookup
+        const { db } = await import("../config/firebase.js");
+
+        // Prevent deletion of admin users
+        const userDoc = await db.collection("users").doc(uid).get();
+        if (!userDoc.exists) {
+            res.status(404).send({ message: "User not found" });
+            return;
+        }
+
+        const userData = userDoc.data();
+        if (userData?.role === "admin") {
+            res.status(403).send({ message: "Cannot delete admin users" });
+            return;
+        }
+
         // Use model layer for database operation (handles both Auth and DB)
         await deleteUserAccount(uid);
 
-        res.status(200).send({ message: "User deleted permanently" });
-    } catch (error) {
-        res.status(500).send({ message: "Error deleting user" });
+        res.status(200).send({
+            message: "User deleted permanently",
+            role: userData?.role
+        });
+    } catch (error: any) {
+        console.error("Error deleting user:", error);
+        res.status(500).send({
+            message: error.message || "Error deleting user"
+        });
     }
 };
 

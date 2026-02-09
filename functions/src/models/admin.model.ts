@@ -40,6 +40,22 @@ export const getPendingTeachers = async (): Promise<PendingTeacherData[]> => {
 };
 
 /**
+ * Get all users (admin only)
+ * @returns Promise<any[]>
+ */
+export const getAllUsers = async (): Promise<any[]> => {
+    const snapshot = await db
+        .collection("users")
+        .orderBy("createdAt", "desc")
+        .get();
+
+    return snapshot.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data()
+    }));
+};
+
+/**
  * Update teacher status (approve/reject)
  * @param uid - Teacher's UID
  * @param status - New status
@@ -66,15 +82,102 @@ export const updateUserSubscription = async (
 };
 
 /**
+ * Delete all data associated with a teacher
+ * - Courses owned by the teacher
+ * - Materials within those courses
+ * - Questions within those courses
+ */
+const deleteTeacherData = async (teacherId: string): Promise<void> => {
+    // Get all courses owned by this teacher
+    const coursesSnapshot = await db
+        .collection("courses")
+        .where("teacherId", "==", teacherId)
+        .get();
+
+    // Delete each course and its subcollections
+    const batch = db.batch();
+    for (const courseDoc of coursesSnapshot.docs) {
+        const courseId = courseDoc.id;
+
+        // Delete materials subcollection
+        const materialsSnapshot = await db
+            .collection("courses")
+            .doc(courseId)
+            .collection("materials")
+            .get();
+        materialsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        // Delete questions subcollection
+        const questionsSnapshot = await db
+            .collection("courses")
+            .doc(courseId)
+            .collection("questions")
+            .get();
+        questionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+        // Delete course document
+        batch.delete(courseDoc.ref);
+    }
+
+    await batch.commit();
+};
+
+/**
+ * Delete all data associated with a student
+ * - Enrollments
+ * - Questions posted by the student
+ */
+const deleteStudentData = async (studentId: string): Promise<void> => {
+    const batch = db.batch();
+
+    // Delete enrollments
+    const enrollmentsSnapshot = await db
+        .collection("enrollments")
+        .where("studentId", "==", studentId)
+        .get();
+    enrollmentsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+
+    // Delete questions posted by this student across all courses
+    const coursesSnapshot = await db.collection("courses").get();
+    for (const courseDoc of coursesSnapshot.docs) {
+        const questionsSnapshot = await db
+            .collection("courses")
+            .doc(courseDoc.id)
+            .collection("questions")
+            .where("userId", "==", studentId)
+            .get();
+        questionsSnapshot.docs.forEach(doc => batch.delete(doc.ref));
+    }
+
+    await batch.commit();
+};
+
+/**
  * Delete user account completely (Auth + Database)
  * @param uid - User ID
  * @returns Promise<void>
  */
 export const deleteUserAccount = async (uid: string): Promise<void> => {
-    // Delete from Authentication
+    // 1. Get user data to determine role
+    const userDoc = await db.collection("users").doc(uid).get();
+    if (!userDoc.exists) {
+        throw new Error("User not found");
+    }
+
+    const userData = userDoc.data();
+    const role = userData?.role;
+
+    // 2. Role-specific cascade deletions
+    if (role === "teacher") {
+        await deleteTeacherData(uid);
+    } else if (role === "student") {
+        await deleteStudentData(uid);
+    }
+
+    // 3. Delete from Authentication
     await auth.deleteUser(uid);
 
-    // Delete from Database
+    // 4. Delete from Database
     await deleteUserFromDb(uid);
 };
 

@@ -4,18 +4,12 @@ import ActionButton from '../components/ActionButton';
 import Modal from '../components/Modal';
 import { Badge } from '../components/Badge';
 import SearchBar from '../components/SearchBar';
+import Toast from '../components/Toast';
 import { Trash2, AlertTriangle, CreditCard } from 'lucide-react';
 import type { AdminUser } from '../types/admin';
+import { getAllUsers, updateSubscription, deleteUser as deleteUserApi } from '../api/admin.api';
 
-// MOCK DATA
-const MOCK_USERS: AdminUser[] = [
-    { uid: '101', email: 'john.doe@example.com', name: 'John Doe', role: 'student', tier: 'free', status: 'active', createdAt: '2023-01-10T10:00:00Z' },
-    { uid: '102', email: 'jane.smith@example.com', name: 'Jane Smith', role: 'student', tier: 'paid', status: 'active', createdAt: '2023-02-15T14:30:00Z' },
-    { uid: '103', email: 'prof.martin@frenchify.com', name: 'Prof. Martin', role: 'teacher', tier: 'free', status: 'active', createdAt: '2023-03-20T09:15:00Z' },
-    { uid: '104', email: 'alice.wonder@example.com', name: 'Alice Wonder', role: 'student', tier: 'free', status: 'active', createdAt: '2023-04-05T11:20:00Z' },
-    { uid: '105', email: 'bob.builder@example.com', name: 'Bob Builder', role: 'student', tier: 'paid', status: 'active', createdAt: '2023-05-12T16:45:00Z' },
-    { uid: '106', email: 'admin@frenchify.com', name: 'Super Admin', role: 'admin', tier: 'free', status: 'active', createdAt: '2023-01-01T00:00:00Z' },
-];
+// ... (imports remain)
 
 export default function UserManagement() {
     const [users, setUsers] = useState<AdminUser[]>([]);
@@ -28,16 +22,27 @@ export default function UserManagement() {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
 
+    // Toast state
+    const [toast, setToast] = useState<{
+        show: boolean;
+        message: string;
+        type: 'success' | 'error' | 'info';
+    }>({ show: false, message: '', type: 'info' });
+
     useEffect(() => {
-        // Simulate API fetch
         const fetchUsers = async () => {
             setLoading(true);
             try {
-                await new Promise(resolve => setTimeout(resolve, 800));
-                setUsers(MOCK_USERS);
-                setFilteredUsers(MOCK_USERS);
+                const data = await getAllUsers();
+                setUsers(data);
+                setFilteredUsers(data);
             } catch (error) {
                 console.error('Error fetching users:', error);
+                setToast({
+                    show: true,
+                    message: 'Failed to fetch users',
+                    type: 'error'
+                });
             } finally {
                 setLoading(false);
             }
@@ -63,16 +68,24 @@ export default function UserManagement() {
         const newTier = user.tier === 'free' ? 'paid' : 'free';
 
         try {
-            // API call: await api.post('/admin/manage-subscription', { uid: user.uid, tier: newTier });
-            await new Promise(resolve => setTimeout(resolve, 600));
+            await updateSubscription({ uid: user.uid, tier: newTier });
 
             setUsers(prev => prev.map(u =>
                 u.uid === user.uid ? { ...u, tier: newTier } : u
             ));
 
-            console.log(`Updated subscription for ${user.email} to ${newTier}`);
-        } catch (error) {
+            setToast({
+                show: true,
+                message: `User upgraded to ${newTier.toUpperCase()}`,
+                type: 'success'
+            });
+        } catch (error: any) {
             console.error('Error updating subscription:', error);
+            setToast({
+                show: true,
+                message: error.response?.data?.message || 'Failed to update subscription',
+                type: 'error'
+            });
         } finally {
             setProcessingId(null);
         }
@@ -90,13 +103,27 @@ export default function UserManagement() {
         setDeleteModalOpen(false);
 
         try {
-            // API call: await api.delete(`/admin/users/${selectedUser.uid}`);
-            await new Promise(resolve => setTimeout(resolve, 800));
+            // Real API call instead of mock
+            await deleteUserApi(selectedUser.uid);
 
+            // Remove from local state
             setUsers(prev => prev.filter(u => u.uid !== selectedUser.uid));
-            console.log(`Deleted user ${selectedUser.email}`);
-        } catch (error) {
+
+            // Show success toast
+            setToast({
+                show: true,
+                message: `${selectedUser.role === 'teacher' ? 'Teacher' : 'User'} deleted successfully`,
+                type: 'success'
+            });
+        } catch (error: any) {
             console.error('Error deleting user:', error);
+
+            // Show error toast
+            setToast({
+                show: true,
+                message: error.response?.data?.message || 'Failed to delete user',
+                type: 'error'
+            });
         } finally {
             setProcessingId(null);
             setSelectedUser(null);
@@ -194,12 +221,14 @@ export default function UserManagement() {
             <Modal
                 isOpen={deleteModalOpen}
                 onClose={() => setDeleteModalOpen(false)}
-                title="Delete User Account"
+                title={`Delete ${selectedUser?.role === 'teacher' ? 'Teacher' : 'User'} Account`}
                 variant="danger"
                 footer={
                     <>
                         <ActionButton onClick={() => setDeleteModalOpen(false)}>Cancel</ActionButton>
-                        <ActionButton variant="delete" onClick={handleDeleteConfirm}>Delete User</ActionButton>
+                        <ActionButton variant="delete" onClick={handleDeleteConfirm}>
+                            Delete {selectedUser?.role === 'teacher' ? 'Teacher' : 'User'}
+                        </ActionButton>
                     </>
                 }
             >
@@ -211,13 +240,48 @@ export default function UserManagement() {
                         <p className="text-sm text-gray-600 mb-2">
                             Are you sure you want to delete <strong>{selectedUser?.email}</strong>?
                         </p>
+
+                        {selectedUser?.role === 'teacher' && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-md p-3 mb-2">
+                                <p className="text-xs text-amber-800 font-medium mb-1">
+                                    ⚠️ Teacher Deletion Impact:
+                                </p>
+                                <ul className="text-xs text-amber-700 list-disc list-inside space-y-1">
+                                    <li>All courses created by this teacher will be deleted</li>
+                                    <li>All materials within those courses will be removed</li>
+                                    <li>All Q&A data for those courses will be lost</li>
+                                </ul>
+                            </div>
+                        )}
+
+                        {selectedUser?.role === 'student' && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-2">
+                                <p className="text-xs text-blue-800 font-medium mb-1">
+                                    ℹ️ Student Deletion Impact:
+                                </p>
+                                <ul className="text-xs text-blue-700 list-disc list-inside space-y-1">
+                                    <li>All course enrollments will be removed</li>
+                                    <li>All questions posted by this student will be deleted</li>
+                                </ul>
+                            </div>
+                        )}
+
                         <p className="text-xs text-gray-500">
-                            This action ensures user data is permanently removed from Authentication and Database.
+                            This action will permanently remove the user from Authentication and Database.
                             This action cannot be undone.
                         </p>
                     </div>
                 </div>
             </Modal>
+
+            {/* Toast Notification */}
+            {toast.show && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast({ ...toast, show: false })}
+                />
+            )}
         </div>
     );
 }

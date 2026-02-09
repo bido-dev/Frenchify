@@ -1,6 +1,6 @@
 import React from 'react';
 
-type ButtonVariant = 'primary' | 'action' | 'destructive' | 'ghost';
+type ButtonVariant = 'primary' | 'action' | 'destructive' | 'ghost' | 'secondary';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -23,7 +23,8 @@ export const Button: React.FC<ButtonProps> = ({
         primary: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm focus:ring-blue-500 border border-transparent",
         action: "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 focus:ring-emerald-500 border border-transparent",
         destructive: "bg-red-50 text-red-600 hover:bg-red-100 focus:ring-red-500 border border-transparent",
-        ghost: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500 hover:text-gray-900"
+        ghost: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500 hover:text-gray-900",
+        secondary: "bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-sm focus:ring-gray-500"
     };
 
     const sizes = {

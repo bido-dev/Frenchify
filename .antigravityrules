@@ -78,7 +78,7 @@ frontend/
   - Form validation (password match, min 8 characters)
   - Security notice alert
   - Success/error state handling
-  - Mock API integration ready
+  - Real API integration
 
 #### Shared Components for Admin
 
@@ -167,13 +167,15 @@ interface TeacherApprovalAction {
 
 - ✅ Teacher approval workflow (approve/reject with modals)
 - ✅ User management (search, view, delete, subscription toggle)
+- ✅ **Admin delete user/teacher with cascade deletion** (removes courses, enrollments, questions)
 - ✅ Admin account creation with validation
 - ✅ Responsive design (mobile sidebar, desktop layout)
 - ✅ Type-safe components with TypeScript
-- ✅ Mock data ready for backend integration
-- ✅ Reusable component library (DataTable, Modal, ActionButton, Badge)
+- ✅ Real API integration (no mock data)
+- ✅ Reusable component library (DataTable, Modal, ActionButton, Badge, Toast)
 - ✅ Loading and empty states
 - ✅ Error handling and validation
+- ✅ Toast notifications for user feedback
 
 #### Teacher Approval Workflow
 
@@ -263,11 +265,12 @@ The frontend uses a centralized API layer with axios for all HTTP requests:
   - Returns `TeacherStats` and `TeacherCourse` interfaces
   
 - **admin.api.ts** - Admin features
+  - `getAllUsers()` - Fetch all users (admin only)
   - `getPendingTeachers()` - Fetch pending teachers (for initial load, real-time uses Firestore)
   - `approveTeacher(data)` - Approve/reject teacher applications
   - `updateSubscription(data)` - Manage user subscription tiers
   - `deleteUser(uid)` - Remove user account
-  - `createAdmin(email, password)` - Create new admin account
+  - `createAdmin(email, password, name?)` - Create new admin account
 
 #### Firebase Configuration (`src/config/`)
 
@@ -379,6 +382,8 @@ while (retries > 0 && !userData) {
 ```
 
 3. **No Hard Redirects on 401**: The API interceptor should NOT use `window.location.href` for redirects as it breaks React state. Let `PrivateRoute` handle auth redirects via React Router.
+
+4. **Backend Failure Handling**: AuthContext detects CORS/network errors after 3 retries and automatically signs out the user to prevent infinite loops. This ensures graceful degradation when the backend is unavailable.
 
 #### Updated Components
 
@@ -746,10 +751,14 @@ functions/src/
 - `GET /teachers/courses` - Get teacher's courses with enrollment counts
 
 #### Admin Routes (`/admin`) - All require: isAuthenticated + isAdmin
+- `GET /admin/users` - Get all users (admin only)
 - `GET /admin/pending-teachers` - Get list of pending teacher applications
 - `POST /admin/approve-teacher` - Approve/reject teacher registration
 - `POST /admin/manage-subscription` - Manual tier override (free/paid)
-- `DELETE /admin/users/:uid` - Delete user from Auth + Firestore
+- `DELETE /admin/users/:uid` - Delete user from Auth + Firestore with cascade cleanup
+  - **Teacher deletion**: Removes all courses, materials, and Q&A owned by teacher
+  - **Student deletion**: Removes all enrollments and questions posted by student
+  - **Admin protection**: Returns 403 if attempting to delete admin users
 - `POST /admin/create-admin` - Create another admin account
 
 ### Middleware Guards
@@ -833,6 +842,9 @@ functions/src/
   - `npm run test:watch` - Watch mode
   - `npm run test:coverage` - Coverage report
 - **Mock Firestore** for unit tests using `jest.mock()`
+- **Test Files**:
+  - `functions/test/admin.model.test.ts` - Admin logic (User management, Teacher approvals, Cascade delete)
+  - `functions/test/question.model.test.ts` - Q&A logic
 
 ### Build & Deploy
 - `npm run build` - TypeScript compilation (must pass before deploy)

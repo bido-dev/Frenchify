@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
+import Modal from '../components/Modal';
 import { Shield, UserPlus, CheckCircle } from 'lucide-react';
+import { createAdmin } from '../api/admin.api';
 
 export default function CreateAdmin() {
     const [formData, setFormData] = useState({
@@ -11,10 +13,30 @@ export default function CreateAdmin() {
         confirmPassword: ''
     });
     const [loading, setLoading] = useState(false);
+    const [confirmModalOpen, setConfirmModalOpen] = useState(false); // New state
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleConfirmSubmit = async () => {
+        setConfirmModalOpen(false);
+        setLoading(true);
+        setError(null);
+        setSuccess(false);
+
+        try {
+            await createAdmin(formData.email, formData.password, formData.name);
+
+            setSuccess(true);
+            setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+        } catch (err: any) {
+            console.error('Error creating admin:', err);
+            setError(err.response?.data?.message || 'Failed to create admin account. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setSuccess(false);
@@ -30,24 +52,11 @@ export default function CreateAdmin() {
             return;
         }
 
-        setLoading(true);
-
-        try {
-            // API call: await api.post('/admin/create-admin', { email: formData.email, password: formData.password, name: formData.name });
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate delay
-
-            setSuccess(true);
-            setFormData({ name: '', email: '', password: '', confirmPassword: '' });
-        } catch (err) {
-            setError('Failed to create admin account. Please try again.');
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+        setConfirmModalOpen(true); // Open modal instead of submitting directly
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto space-y-6">
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">Create Admin Account</h2>
                 <p className="mt-1 text-sm text-gray-500">
@@ -55,7 +64,7 @@ export default function CreateAdmin() {
                 </p>
             </div>
 
-            <div className="bg-white rounded-xl shadow border border-gray-200 p-6 sm:p-8">
+            <div className="bg-white rounded-xl shadow-md p-6 border border-gray-100">
                 <div className="flex items-center gap-4 mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg text-blue-800">
                     <Shield className="shrink-0" size={24} />
                     <div className="text-sm">
@@ -132,6 +141,37 @@ export default function CreateAdmin() {
                     </div>
                 </form>
             </div>
+
+            <Modal
+                isOpen={confirmModalOpen}
+                onClose={() => setConfirmModalOpen(false)}
+                title="Create New Admin?"
+                variant="warning"
+                footer={
+                    <>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setConfirmModalOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="primary"
+                            onClick={handleConfirmSubmit}
+                            isLoading={loading}
+                        >
+                            Confirm Create
+                        </Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <p>Are you sure you want to create a new admin account for <strong>{formData.email}</strong>?</p>
+                    <p className="text-sm text-gray-500">
+                        This user will have full access to manage users, teachers, and content on the platform.
+                    </p>
+                </div>
+            </Modal>
         </div>
     );
 }
