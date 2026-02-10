@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, MailCheck } from 'lucide-react';
 import { login as loginApi, loginWithGoogle } from '../api/auth.api';
 
 export const Login: React.FC = () => {
@@ -16,6 +16,8 @@ export const Login: React.FC = () => {
     });
 
     const from = (location.state as any)?.from?.pathname || '/dashboard';
+
+    const isVerificationError = error?.includes('not been verified');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -124,11 +126,21 @@ export const Login: React.FC = () => {
                             </div>
                         </div>
 
-                        {error && (
+                        {error && isVerificationError ? (
+                            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-3">
+                                <MailCheck className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                                <div>
+                                    <p className="text-sm font-medium text-amber-800">Email not verified</p>
+                                    <p className="text-sm text-amber-700 mt-1">
+                                        {error}
+                                    </p>
+                                </div>
+                            </div>
+                        ) : error ? (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
                                 {error}
                             </div>
-                        )}
+                        ) : null}
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             <div className="space-y-4">

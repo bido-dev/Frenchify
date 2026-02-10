@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { Star } from 'lucide-react';
+import { Star, MailCheck } from 'lucide-react';
 import { signup } from '../api/auth.api';
 
 export const Register: React.FC = () => {
-    const navigate = useNavigate();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
     const [role, setRole] = useState<'student' | 'teacher'>('student');
     const [formData, setFormData] = useState({
         name: '',
@@ -35,20 +35,18 @@ export const Register: React.FC = () => {
         setIsLoading(true);
 
         try {
-            const userData = await signup({
+            await signup({
                 email: formData.email,
                 password: formData.password,
                 role,
                 name: formData.name,
             });
 
-            // Show message for teachers about approval
-            if (userData.role === 'teacher' && userData.status === 'pending') {
-                alert('Your teacher account has been created! An administrator will review your application. You can log in, but you won\'t be able to publish courses until approved.');
-            }
+            // Show success panel with verification info
+            setSuccess(true);
 
-            // Redirect to login
-            navigate('/login');
+            // If teacher, the success panel already mentions pending approval
+            // No need for separate alert
         } catch (err: any) {
             console.error('Registration error:', err);
             setError(err.response?.data?.message || err.message || 'Failed to create account. Please try again.');
@@ -56,6 +54,38 @@ export const Register: React.FC = () => {
             setIsLoading(false);
         }
     };
+
+    // Success panel after registration
+    if (success) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white p-8">
+                <div className="w-full max-w-md text-center space-y-6">
+                    <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                        <MailCheck className="w-8 h-8 text-green-600" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900">Verify your email</h2>
+                    <p className="text-gray-600">
+                        We've sent a verification link to <span className="font-medium text-gray-900">{formData.email}</span>.
+                        Please check your inbox and click the link to activate your account.
+                    </p>
+                    {role === 'teacher' && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-700">
+                            As a teacher, your account will also need to be approved by an administrator before you can publish courses.
+                        </div>
+                    )}
+                    <p className="text-sm text-gray-500">
+                        Didn't receive the email? Check your spam folder.
+                    </p>
+                    <Link
+                        to="/login"
+                        className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Go to Login
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen grid lg:grid-cols-2">

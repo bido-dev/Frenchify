@@ -306,15 +306,17 @@ The frontend uses a centralized API layer with axios for all HTTP requests:
 **Registration:**
 1. User fills form and selects role (student/teacher)
 2. Firebase creates auth account via `createUserWithEmailAndPassword()`
-3. Backend syncs user to Firestore via `POST /users/sync`
-4. Students get `tier: "free"`, `status: "active"`
-5. Teachers get `tier: "free"`, `status: "pending"` (awaiting admin approval)
-6. User redirected to login page
+3. **Email Verification**: Frontend calls `sendEmailVerification()` and signs user out
+4. Backend syncs user to Firestore via `POST /users/sync`
+5. Students get `tier: "free"`, `status: "active"`
+6. Teachers get `tier: "free"`, `status: "pending"` (awaiting admin approval)
+7. User redirected to login page (must verify email before logging in)
 
 **Login:**
 1. User enters credentials
 2. Firebase authenticates via `signInWithEmailAndPassword()`
-3. Frontend fetches user data via `GET /users/me` (with ID token)
+3. **Verification Check**: Frontend checks `user.emailVerified`. If false, signs out and blocks login.
+4. Frontend fetches user data via `GET /users/me` (with ID token)
 4. AuthContext updates with user data
 5. User redirected based on role:
    - Admin → `/admin`
