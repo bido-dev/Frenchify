@@ -1,33 +1,195 @@
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AddMaterialModal } from './components/AddMaterialModal';
-import { ArrowLeft, Save, GripVertical, Video, Youtube, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import Toast from '../components/Toast';
+import Modal from '../components/Modal';
+import { ArrowLeft, Save, GripVertical, Video, Youtube, FileText, Trash2, AlertCircle, Upload as UploadIcon } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+    createCourse,
+    getCourse,
+    updateCourse,
+    publishCourse,
+    getCourseMaterials,
+    addMaterial,
+    deleteMaterial,
+    type MaterialData,
+} from '../api/course.api';
 
 export const CourseEditor: React.FC = () => {
     const { courseId } = useParams();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const navigate = useNavigate();
+    const isNew = !courseId || courseId === 'new';
 
-    // Mock State
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(!isNew);
+    const [saving, setSaving] = useState(false);
+    const [publishing, setPublishing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
+
+    // Delete material state
+    const [deletingMaterial, setDeletingMaterial] = useState<MaterialData | null>(null);
+    const [deleteLoading, setDeleteLoading] = useState(false);
+
+    // Course form state
     const [course, setCourse] = useState({
-        title: 'French Grammar 101',
-        description: 'A complete guide to French grammar.',
+        title: '',
+        description: '',
         isPaid: false,
         category: 'grammar' as 'grammar' | 'conversation',
-        materials: [
-            { id: 1, title: 'Introduction', type: 'youtube', isFree: true },
-            { id: 2, title: 'Verbs - Present Tense', type: 'video', isFree: false },
-            { id: 3, title: 'Quiz 1', type: 'quiz', isFree: false },
-        ]
+        status: 'draft' as 'draft' | 'published',
     });
 
-    const handleAddMaterial = (material: any) => {
-        setCourse(prev => ({
-            ...prev,
-            materials: [...prev.materials, { ...material, id: Date.now() }]
-        }));
+    const [materials, setMaterials] = useState<MaterialData[]>([]);
+    const [savedCourseId, setSavedCourseId] = useState<string | null>(isNew ? null : courseId!);
+
+    // Load existing course data
+    useEffect(() => {
+        if (!isNew && courseId) {
+            const loadCourse = async () => {
+                try {
+                    setLoading(true);
+                    const [courseData, materialsData] = await Promise.all([
+                        getCourse(courseId),
+                        getCourseMaterials(courseId),
+                    ]);
+                    setCourse({
+                        title: courseData.title,
+                        description: courseData.description,
+                        isPaid: courseData.isPaid,
+                        category: courseData.category,
+                        status: courseData.status,
+                    });
+                    setMaterials(materialsData);
+                } catch (err: any) {
+                    console.error('Error loading course:', err);
+                    setError(err.response?.data?.message || err.message || 'Failed to load course.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            loadCourse();
+        }
+    }, [courseId, isNew]);
+
+    const handleSaveDraft = async () => {
+        if (!course.title.trim()) {
+            setToast({ message: 'Course title is required.', variant: 'error' });
+            return;
+        }
+
+        setSaving(true);
+        try {
+            if (savedCourseId) {
+                // Update existing course
+                await updateCourse(savedCourseId, {
+                    title: course.title,
+                    description: course.description,
+                    category: course.category,
+                    isPaid: course.isPaid,
+                });
+                setToast({ message: 'Course saved successfully.', variant: 'success' });
+            } else {
+                // Create new course
+                const result = await createCourse({
+                    title: course.title,
+                    description: course.description,
+                    category: course.category,
+                    isPaid: course.isPaid,
+                });
+                setSavedCourseId(result.id);
+                // Update the URL so refreshing loads the course
+                navigate(`/teacher/course/${result.id}/edit`, { replace: true });
+                setToast({ message: 'Course created as draft.', variant: 'success' });
+            }
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to save course.', variant: 'error' });
+        } finally {
+            setSaving(false);
+        }
     };
+
+    const handlePublish = async () => {
+        if (!savedCourseId) {
+            setToast({ message: 'Save the course first before publishing.', variant: 'error' });
+            return;
+        }
+
+        setPublishing(true);
+        try {
+            await publishCourse(savedCourseId);
+            setCourse(prev => ({ ...prev, status: 'published' }));
+            setToast({ message: 'Course published live!', variant: 'success' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to publish course.', variant: 'error' });
+        } finally {
+            setPublishing(false);
+        }
+    };
+
+    const handleAddMaterial = async (material: { type: string; title: string; content: string; isFree: boolean }) => {
+        if (!savedCourseId) {
+            setToast({ message: 'Save the course first before adding materials.', variant: 'error' });
+            return;
+        }
+
+        try {
+            await addMaterial(savedCourseId, {
+                title: material.title,
+                type: material.type as 'video' | 'youtube' | 'quiz' | 'pdf',
+                url: material.content || '',
+                isFreePreview: material.isFree,
+            });
+            // Reload materials
+            const updated = await getCourseMaterials(savedCourseId);
+            setMaterials(updated);
+            setToast({ message: 'Material added successfully.', variant: 'success' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to add material.', variant: 'error' });
+        }
+    };
+
+    const handleDeleteMaterial = async () => {
+        if (!savedCourseId || !deletingMaterial) return;
+
+        setDeleteLoading(true);
+        try {
+            await deleteMaterial(savedCourseId, deletingMaterial.id);
+            setMaterials(prev => prev.filter(m => m.id !== deletingMaterial.id));
+            setToast({ message: 'Material deleted.', variant: 'success' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to delete material.', variant: 'error' });
+        } finally {
+            setDeleteLoading(false);
+            setDeletingMaterial(null);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <LoadingSpinner size="lg" text="Loading course..." />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-5xl mx-auto py-12">
+                <div className="text-center p-8 bg-red-50 rounded-xl border border-red-200">
+                    <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-3" />
+                    <h3 className="text-lg font-medium text-red-800">Failed to load course</h3>
+                    <p className="text-red-600 mt-1">{error}</p>
+                    <Link to="/teacher/dashboard">
+                        <Button className="mt-4">Back to Dashboard</Button>
+                    </Link>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
@@ -39,15 +201,22 @@ export const CourseEditor: React.FC = () => {
                         </Button>
                     </Link>
                     <h1 className="text-2xl font-bold text-gray-900">
-                        {courseId === 'new' ? 'New Course' : 'Edit Course'}
+                        {isNew && !savedCourseId ? 'New Course' : 'Edit Course'}
                     </h1>
+                    {course.status === 'published' && (
+                        <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">Published</span>
+                    )}
                 </div>
                 <div className="flex gap-3">
-                    <Button variant="ghost">Save Draft</Button>
-                    <Button>
-                        <Save className="w-4 h-4 mr-2" />
-                        Publish Course
+                    <Button variant="ghost" onClick={handleSaveDraft} isLoading={saving} disabled={publishing}>
+                        Save Draft
                     </Button>
+                    {course.status !== 'published' && (
+                        <Button onClick={handlePublish} isLoading={publishing} disabled={saving || !savedCourseId}>
+                            <Save className="w-4 h-4 mr-2" />
+                            Publish Course
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -59,6 +228,7 @@ export const CourseEditor: React.FC = () => {
                             label="Course Title"
                             value={course.title}
                             onChange={e => setCourse({ ...course, title: e.target.value })}
+                            placeholder="e.g., French Grammar 101"
                         />
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -66,6 +236,7 @@ export const CourseEditor: React.FC = () => {
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 min-h-[120px]"
                                 value={course.description}
                                 onChange={e => setCourse({ ...course, description: e.target.value })}
+                                placeholder="Describe what students will learn..."
                             ></textarea>
                         </div>
                     </div>
@@ -73,30 +244,57 @@ export const CourseEditor: React.FC = () => {
                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                         <div className="flex justify-between items-center mb-6">
                             <h2 className="text-lg font-bold text-gray-900">Course Curriculum</h2>
-                            <Button size="sm" onClick={() => setIsModalOpen(true)}>+ Add Material</Button>
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    if (!savedCourseId) {
+                                        setToast({ message: 'Save the course first before adding materials.', variant: 'error' });
+                                        return;
+                                    }
+                                    setIsModalOpen(true);
+                                }}
+                            >
+                                + Add Material
+                            </Button>
                         </div>
 
-                        {course.materials.length === 0 ? (
+                        {materials.length === 0 ? (
                             <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                <UploadIcon className="mx-auto h-10 w-10 text-gray-300 mb-2" />
                                 <p className="text-gray-500">No lessons yet. Start adding content!</p>
+                                {!savedCourseId && (
+                                    <p className="text-xs text-gray-400 mt-1">Save the course first to add materials.</p>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-2">
-                                {course.materials.map((item, index) => (
-                                    <div key={item.id} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors group cursor-grab active:cursor-grabbing">
+                                {materials.map((item, index) => (
+                                    <div key={item.id} className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors group">
                                         <GripVertical className="text-gray-400 group-hover:text-gray-600" size={20} />
                                         <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 text-gray-500">
                                             {item.type === 'youtube' && <Youtube size={20} />}
                                             {item.type === 'video' && <Video size={20} />}
-                                            {item.type === 'quiz' && <FileText size={20} />}
+                                            {(item.type === 'quiz' || item.type === 'pdf') && <FileText size={20} />}
                                         </div>
-                                        <div className="flex-1">
-                                            <h4 className="font-medium text-gray-900">
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-medium text-gray-900 truncate">
                                                 {index + 1}. {item.title}
                                             </h4>
-                                            {item.isFree && <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">Free Preview</span>}
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-xs text-gray-400 uppercase">{item.type}</span>
+                                                {item.isFreePreview && (
+                                                    <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">Free Preview</span>
+                                                )}
+                                            </div>
                                         </div>
-                                        <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">Edit</Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
+                                            onClick={() => setDeletingMaterial(item)}
+                                        >
+                                            <Trash2 size={16} />
+                                        </Button>
                                     </div>
                                 ))}
                             </div>
@@ -160,6 +358,32 @@ export const CourseEditor: React.FC = () => {
                 onClose={() => setIsModalOpen(false)}
                 onSave={handleAddMaterial}
             />
+
+            {/* Delete Material Modal */}
+            <Modal
+                isOpen={!!deletingMaterial}
+                onClose={() => setDeletingMaterial(null)}
+                title="Delete Material"
+                variant="danger"
+                footer={
+                    <div className="flex justify-end gap-3">
+                        <Button variant="ghost" onClick={() => setDeletingMaterial(null)} disabled={deleteLoading}>Cancel</Button>
+                        <Button variant="destructive" onClick={handleDeleteMaterial} isLoading={deleteLoading}>Delete</Button>
+                    </div>
+                }
+            >
+                <p className="text-gray-600">
+                    Are you sure you want to delete <strong>"{deletingMaterial?.title}"</strong>?
+                </p>
+            </Modal>
+
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.variant}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

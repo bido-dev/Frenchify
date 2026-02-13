@@ -1,166 +1,160 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '../components/Button';
-import { MessageCircle, CheckCircle, Clock } from 'lucide-react';
-
-// Mock Data
-const MOCK_QUESTIONS = [
-    {
-        id: 1,
-        studentName: 'Alice Johnson',
-        courseTitle: 'French Grammar 101',
-        lessonTitle: 'Verbs - Present Tense',
-        question: 'Could you explain the difference between "avoir" and "être" again? I am a bit confused.',
-        timestamp: '2 hours ago',
-        status: 'unanswered',
-        avatar: 'https://i.pravatar.cc/150?u=alice'
-    },
-    {
-        id: 2,
-        studentName: 'Bob Smith',
-        courseTitle: 'Business French',
-        lessonTitle: 'Email Etiquette',
-        question: 'Is "Cordialement" appropriate for a CEO?',
-        timestamp: '1 day ago',
-        status: 'answered',
-        avatar: 'https://i.pravatar.cc/150?u=bob',
-        reply: 'Yes, "Cordialement" is standard and safe. For a closer relationship, you might use "Bien à vous".'
-    },
-    {
-        id: 3,
-        studentName: 'Charlie Brown',
-        courseTitle: 'French Grammar 101',
-        lessonTitle: 'Introduction',
-        question: 'Will we cover the subjunctive mood in this course?',
-        timestamp: '2 days ago',
-        status: 'unanswered',
-        avatar: 'https://i.pravatar.cc/150?u=charlie'
-    }
-];
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import Toast from '../components/Toast';
+import { CheckCircle, Clock, AlertCircle, Send } from 'lucide-react';
+import { getUnansweredQuestions, answerQuestion, type QuestionData } from '../api/question.api';
 
 export const MyQuestions: React.FC = () => {
-    const [filter, setFilter] = useState<'all' | 'unanswered' | 'answered'>('all');
-    const [replyText, setReplyText] = useState<{ [key: number]: string }>({});
+    const [questions, setQuestions] = useState<QuestionData[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
+    const [sendingReply, setSendingReply] = useState<string | null>(null);
+    const [toast, setToast] = useState<{ message: string; variant: 'success' | 'error' } | null>(null);
 
-    const filteredQuestions = MOCK_QUESTIONS.filter(q => {
-        if (filter === 'all') return true;
-        return q.status === filter;
-    });
+    const fetchQuestions = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await getUnansweredQuestions();
+            setQuestions(data);
+        } catch (err: any) {
+            console.error('Error fetching questions:', err);
+            setError(err.response?.data?.message || err.message || 'Failed to load questions.');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const handleReplyChange = (id: number, text: string) => {
+    useEffect(() => {
+        fetchQuestions();
+    }, [fetchQuestions]);
+
+    const handleReplyChange = (id: string, text: string) => {
         setReplyText(prev => ({ ...prev, [id]: text }));
     };
 
-    const handleSendReply = (id: number) => {
-        // Simulate sending reply
-        console.log(`Replying to ${id}: ${replyText[id]}`);
-        alert('Reply sent! (Simulation)');
-        setReplyText(prev => ({ ...prev, [id]: '' }));
+    const handleSendReply = async (question: QuestionData) => {
+        const reply = replyText[question.questionId]?.trim();
+        if (!reply) return;
+
+        setSendingReply(question.questionId);
+        try {
+            await answerQuestion(question.courseId, question.questionId, reply);
+            // Remove from list since it's now answered
+            setQuestions(prev => prev.filter(q => q.questionId !== question.questionId));
+            setReplyText(prev => {
+                const copy = { ...prev };
+                delete copy[question.questionId];
+                return copy;
+            });
+            setToast({ message: 'Reply sent successfully!', variant: 'success' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to send reply.', variant: 'error' });
+        } finally {
+            setSendingReply(null);
+        }
     };
+
+    const formatTimeAgo = (dateStr: string): string => {
+        const date = new Date(dateStr);
+        const now = new Date();
+        const diffMs = now.getTime() - date.getTime();
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        if (diffMins < 60) return `${diffMins}m ago`;
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+        const diffDays = Math.floor(diffHours / 24);
+        return `${diffDays}d ago`;
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center py-20">
+                <LoadingSpinner size="lg" text="Loading questions..." />
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="max-w-5xl mx-auto py-12">
+                <div className="text-center p-8 bg-red-50 rounded-xl border border-red-200">
+                    <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-3" />
+                    <h3 className="text-lg font-medium text-red-800">Failed to load questions</h3>
+                    <p className="text-red-600 mt-1">{error}</p>
+                    <Button onClick={fetchQuestions} className="mt-4">Retry</Button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-5xl mx-auto space-y-8">
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-2xl font-bold text-gray-900">Student Questions</h1>
+                    {questions.length > 0 && (
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                            <Clock size={14} /> {questions.length} pending
+                        </span>
+                    )}
                 </div>
             </div>
 
-            <div className="flex gap-4 border-b border-gray-200 pb-4">
-                <button
-                    onClick={() => setFilter('all')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'all' ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-                        }`}
-                >
-                    All Questions
-                </button>
-                <button
-                    onClick={() => setFilter('unanswered')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'unanswered' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-                        }`}
-                >
-                    Unanswered
-                </button>
-                <button
-                    onClick={() => setFilter('answered')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${filter === 'answered' ? 'bg-emerald-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-100'
-                        }`}
-                >
-                    Answered
-                </button>
-            </div>
-
             <div className="space-y-4">
-                {filteredQuestions.length === 0 ? (
+                {questions.length === 0 ? (
                     <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                        <MessageCircle className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                        <h3 className="text-lg font-medium text-gray-900">No questions found</h3>
-                        <p className="text-gray-500">Good job! You're all caught up.</p>
+                        <CheckCircle className="mx-auto h-12 w-12 text-emerald-400 mb-3" />
+                        <h3 className="text-lg font-medium text-gray-900">All caught up!</h3>
+                        <p className="text-gray-500">No unanswered questions from your students.</p>
                     </div>
                 ) : (
-                    filteredQuestions.map((q) => (
-                        <div key={q.id} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
+                    questions.map((q) => (
+                        <div key={q.questionId} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
                             <div className="flex items-start gap-4">
-                                <img
-                                    src={q.avatar}
-                                    alt={q.studentName}
-                                    className="w-10 h-10 rounded-full bg-gray-200 object-cover"
-                                />
+                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                                    {q.userName?.charAt(0)?.toUpperCase() || '?'}
+                                </div>
                                 <div className="flex-1">
                                     <div className="flex justify-between items-start">
                                         <div>
-                                            <h3 className="text-base font-semibold text-gray-900">{q.studentName}</h3>
+                                            <h3 className="text-base font-semibold text-gray-900">{q.userName}</h3>
                                             <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
-                                                <span>{q.courseTitle}</span>
-                                                <span>•</span>
-                                                <span>{q.lessonTitle}</span>
-                                                <span>•</span>
-                                                <span>{q.timestamp}</span>
+                                                <span>{formatTimeAgo(q.createdAt)}</span>
                                             </div>
                                         </div>
-                                        <div>
-                                            {q.status === 'answered' ? (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                                                    <CheckCircle size={12} /> Answered
-                                                </span>
-                                            ) : (
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                    <Clock size={12} /> Pending
-                                                </span>
-                                            )}
-                                        </div>
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            <Clock size={12} /> Pending
+                                        </span>
                                     </div>
 
                                     <div className="mt-3 p-4 bg-gray-50 rounded-lg text-gray-800 text-base leading-relaxed">
-                                        "{q.question}"
+                                        "{q.content}"
                                     </div>
 
                                     {/* Reply Section */}
-                                    <div className="mt-4">
-                                        {q.status === 'answered' ? (
-                                            <div className="pl-4 border-l-2 border-emerald-200">
-                                                <p className="text-xs font-bold text-gray-500 mb-1 uppercase tracking-wide">Your Answer</p>
-                                                <p className="text-gray-700">{q.reply}</p>
-                                            </div>
-                                        ) : (
-                                            <div className="space-y-3">
-                                                <textarea
-                                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
-                                                    placeholder="Write your reply here..."
-                                                    rows={3}
-                                                    value={replyText[q.id] || ''}
-                                                    onChange={(e) => handleReplyChange(q.id, e.target.value)}
-                                                ></textarea>
-                                                <div className="flex justify-end">
-                                                    <Button
-                                                        size="sm"
-                                                        onClick={() => handleSendReply(q.id)}
-                                                        disabled={!replyText[q.id]}
-                                                    >
-                                                        Post Reply
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
+                                    <div className="mt-4 space-y-3">
+                                        <textarea
+                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                                            placeholder="Write your reply here..."
+                                            rows={3}
+                                            value={replyText[q.questionId] || ''}
+                                            onChange={(e) => handleReplyChange(q.questionId, e.target.value)}
+                                            disabled={sendingReply === q.questionId}
+                                        ></textarea>
+                                        <div className="flex justify-end">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => handleSendReply(q)}
+                                                disabled={!replyText[q.questionId]?.trim() || sendingReply === q.questionId}
+                                                isLoading={sendingReply === q.questionId}
+                                            >
+                                                <Send size={14} className="mr-1" />
+                                                Post Reply
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -168,6 +162,14 @@ export const MyQuestions: React.FC = () => {
                     ))
                 )}
             </div>
+
+            {toast && (
+                <Toast
+                    message={toast.message}
+                    type={toast.variant}
+                    onClose={() => setToast(null)}
+                />
+            )}
         </div>
     );
 };

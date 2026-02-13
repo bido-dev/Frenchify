@@ -6,7 +6,8 @@ import {
     updateCourseHandler,
     deleteCourseHandler,
     updateMaterialHandler,
-    deleteMaterialHandler
+    deleteMaterialHandler,
+    getCourseMaterialsHandler
 } from "../controllers/course.controller";
 import { isAuthenticated } from "../middleware/auth";
 import { isTeacher } from "../middleware/roleCheck";
@@ -19,6 +20,7 @@ router.use(isAuthenticated, isTeacher);
 router.post("/", createCourseHandler); // [PRD 3.3]
 router.patch("/:courseId", updateCourseHandler); // Update course
 router.delete("/:courseId", deleteCourseHandler); // Delete course
+router.get("/:courseId/materials", getCourseMaterialsHandler); // Get all materials (owner only)
 router.post("/:courseId/materials", addMaterial); // [PRD 8]
 router.patch("/:courseId/materials/:materialId", updateMaterialHandler); // Update material
 router.delete("/:courseId/materials/:materialId", deleteMaterialHandler); // Delete material

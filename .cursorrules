@@ -228,6 +228,39 @@ interface TeacherApprovalAction {
 - Uses Firestore WebSocket listeners (no polling)
 - Efficient: Single connection per user
 
+### Teacher Pages Implementation
+
+#### Teacher Pages (`src/teacherPages/`)
+
+- **TeacherLayout.tsx** - Main layout for teacher dashboard
+  - Sidebar navigation customized for teachers
+  - Mobile-responsive design
+  - Shared header with user profile
+
+- **TeacherDashboard.tsx** - Overview hub
+  - **Stats Cards**: Total courses, active students, pending questions
+  - **Courses List**: Display courses with status (Draft/Published) and enrollment counts
+  - **Quick Actions**: "Create Course" button
+  - **Delete Functionality**: Remove courses with confirmation modal
+
+- **CourseEditor.tsx** - Comprehensive course management
+  - **Modes**: Create New / Edit Existing
+  - **Metadata Editing**: Title, description, category (Grammar/Conversation), paid status
+  - **Materials Management**: 
+    - Add/Edit/Delete materials (Video, YouTube, Quiz, PDF)
+    - Reorder materials (UI implementation pending)
+    - Toggle "Free Preview" status
+  - **Publishing Flow**: Draft -> Published (requires active teacher status)
+  - **Validation**: Prevents publishing without saving or if teacher is not active
+
+- **MyQuestions.tsx** - Q&A Management
+  - Fetches unanswered questions from student enrollments
+  - UI for typing and sending replies
+  - Updates local state optimistically upon answering
+
+- **PendingApproval.tsx** - Gatekeeper page
+  - Shown to teachers with `status: "pending"` or `status: "rejected"`
+  - Real-time status listening to auto-redirect upon approval
 
 ### API Organization & Authentication
 
@@ -259,10 +292,23 @@ The frontend uses a centralized API layer with axios for all HTTP requests:
   - `getEnrolledCourses()` - Get enrolled courses with progress
   - Returns `StudentStats` and `EnrolledCourse` interfaces
   
-- **teacher.api.ts** - Teacher features
+- **teacher.api.ts** - Teacher dashboard stats
   - `getTeacherStats()` - Get teaching statistics (courses created, total students, pending questions)
   - `getTeacherCourses()` - Get teacher's courses with enrollment counts
   - Returns `TeacherStats` and `TeacherCourse` interfaces
+
+- **course.api.ts** - Course management (CRUD)
+  - `createCourse(data)` - Create new draft course
+  - `getCourse(id)` - Get course details
+  - `updateCourse(id, data)` - Update metadata
+  - `getCourseMaterials(id)` - Get all materials (teacher view)
+  - `addMaterial`, `updateMaterial`, `deleteMaterial` - Manage content
+  - `publishCourse(id)` - Make course live
+
+- **question.api.ts** - Q&A management
+  - `getUnansweredQuestions()` - Get pending student questions
+  - `answerQuestion(courseId, questionId, text)` - Reply to student
+
   
 - **admin.api.ts** - Admin features
   - `getAllUsers()` - Fetch all users (admin only)
@@ -734,6 +780,7 @@ functions/src/
 - `GET /students/enrolled` - Get enrolled courses with progress (requires: isAuthenticated)
 
 #### Course Routes (`/courses`) - All require: isAuthenticated + isTeacher
+- `GET /courses/:courseId/materials` - Get all materials (course owner only, no tier filtering)
 - `POST /courses` - Create course (draft mode)
 - `PATCH /courses/:courseId` - Update course metadata
 - `DELETE /courses/:courseId` - Delete course

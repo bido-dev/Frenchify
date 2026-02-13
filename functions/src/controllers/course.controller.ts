@@ -10,6 +10,47 @@ import {
     deleteMaterial
 } from "../models/course.model";
 import { getUserById } from "../models/user.model";
+import { db } from "../config/firebase";
+
+// 0. Get Course Materials (for course owner - no tier filtering)
+export const getCourseMaterialsHandler = async (req: Request, res: Response) => {
+    try {
+        const { courseId } = req.params as { courseId: string };
+        const uid = req.user?.uid;
+
+        if (!uid) {
+            res.status(401).send({ message: "Unauthorized" });
+            return;
+        }
+
+        // Check ownership
+        const isOwner = await checkCourseOwnership(courseId, uid);
+        const isAdmin = req.user?.role === "admin";
+
+        if (!isOwner && !isAdmin) {
+            res.status(403).send({ message: "Forbidden: Not your course" });
+            return;
+        }
+
+        // Get ALL materials (no tier filtering)
+        const snapshot = await db
+            .collection("courses")
+            .doc(courseId)
+            .collection("materials")
+            .orderBy("createdAt", "asc")
+            .get();
+
+        const materials = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        res.status(200).send(materials);
+    } catch (error) {
+        console.error("Error fetching course materials:", error);
+        res.status(500).send({ message: "Error fetching course materials" });
+    }
+};
 
 // 1. Create a New Course (Draft Mode) [PRD 3.3]
 export const createCourseHandler = async (req: Request, res: Response) => {
