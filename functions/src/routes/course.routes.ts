@@ -9,6 +9,12 @@ import {
     deleteMaterialHandler,
     getCourseMaterialsHandler
 } from "../controllers/course.controller";
+import {
+    createLessonHandler,
+    updateLessonHandler,
+    deleteLessonHandler,
+    getCourseLessonsHandler
+} from "../controllers/lesson.controller";
 import { isAuthenticated } from "../middleware/auth";
 import { isTeacher } from "../middleware/roleCheck";
 
@@ -25,5 +31,11 @@ router.post("/:courseId/materials", addMaterial); // [PRD 8]
 router.patch("/:courseId/materials/:materialId", updateMaterialHandler); // Update material
 router.delete("/:courseId/materials/:materialId", deleteMaterialHandler); // Delete material
 router.patch("/:courseId/publish", publishCourse); // [PRD 6]
+
+// Lesson Routes
+router.post("/:courseId/lessons", createLessonHandler);
+router.get("/:courseId/lessons", getCourseLessonsHandler);
+router.patch("/:courseId/lessons/:lessonId", updateLessonHandler);
+router.delete("/:courseId/lessons/:lessonId", deleteLessonHandler);
 
 export default router;

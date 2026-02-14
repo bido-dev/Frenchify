@@ -784,10 +784,17 @@ functions/src/
 - `POST /courses` - Create course (draft mode)
 - `PATCH /courses/:courseId` - Update course metadata
 - `DELETE /courses/:courseId` - Delete course
-- `POST /courses/:courseId/materials` - Add material (YouTube/video/quiz/PDF)
+- `POST /courses/:courseId/materials` - Add material to library (YouTube/video/quiz/PDF)
+  - Storage path: `materials/{userId}/{timestamp}_{filename}`
 - `PATCH /courses/:courseId/materials/:materialId` - Update material
 - `DELETE /courses/:courseId/materials/:materialId` - Delete material
 - `PATCH /courses/:courseId/publish` - Publish course (checks teacher approval status)
+
+#### Lesson Routes (`/courses/:courseId/lessons`)
+- `POST /` - Create lesson (links to existing material via ID, no direct upload)
+- `GET /` - Get all lessons for a course
+- `PATCH /:lessonId` - Update lesson details
+- `DELETE /:lessonId` - Delete lesson
 
 #### Question Routes (`/questions`)
 - `POST /questions/:courseId` - Student asks question (requires: isAuthenticated + isPaidTier)
