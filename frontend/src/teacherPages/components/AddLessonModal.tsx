@@ -16,8 +16,8 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
     const [title, setTitle] = useState('');
     const [error, setError] = useState<string | null>(null);
 
-    // Selected Material States
-    const [selectedVideoId, setSelectedVideoId] = useState<string>('');
+    // Lesson Data
+    const [youtubeUrl, setYoutubeUrl] = useState('');
     const [selectedPdfId, setSelectedPdfId] = useState<string>('');
 
     if (!isOpen) return null;
@@ -34,16 +34,13 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
         try {
             const lessonData: LessonCreateData = { title };
 
-            // Handle Video (YouTube or Uploaded Video from Library)
-            if (selectedVideoId) {
-                const videoMaterial = availableMaterials.find(m => m.id === selectedVideoId);
-                if (videoMaterial) {
-                    if (videoMaterial.type === 'youtube') {
-                        lessonData.video = { type: 'youtube', url: videoMaterial.url };
-                    } else if (videoMaterial.type === 'video') {
-                        lessonData.video = { type: 'upload', url: videoMaterial.url };
-                    }
-                }
+            // Handle YouTube Video
+            if (youtubeUrl.trim()) {
+                // Simple validation for YouTube URL structure could be added here
+                lessonData.video = {
+                    type: 'youtube',
+                    url: youtubeUrl.trim()
+                };
             }
 
             // Handle PDF
@@ -59,7 +56,9 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
 
             // Reset form
             setTitle('');
-            setSelectedVideoId('');
+            setTitle('');
+            setYoutubeUrl('');
+            setSelectedPdfId('');
             setSelectedPdfId('');
         } catch (err: any) {
             console.error('Creation failed:', err);
@@ -68,7 +67,6 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
     };
 
     // Filter materials by type
-    const videoMaterials = availableMaterials.filter(m => m.type === 'video' || m.type === 'youtube');
     const pdfMaterials = availableMaterials.filter(m => m.type === 'pdf');
 
     return (
@@ -90,27 +88,13 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
                         required
                     />
 
-                    {/* Video Selection */}
-                    <div className="space-y-2">
-                        <label className="block text-sm font-medium text-gray-700">Video Material (Optional)</label>
-                        <select
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
-                            value={selectedVideoId}
-                            onChange={(e) => setSelectedVideoId(e.target.value)}
-                        >
-                            <option value="">-- Select a Video or YouTube Link --</option>
-                            {videoMaterials.map(m => (
-                                <option key={m.id} value={m.id}>
-                                    {m.type === 'youtube' ? '📺' : '🎥'} {m.title}
-                                </option>
-                            ))}
-                        </select>
-                        {videoMaterials.length === 0 && (
-                            <p className="text-xs text-amber-600">
-                                No videos available. Add them to the Materials Library first.
-                            </p>
-                        )}
-                    </div>
+                    {/* YouTube Video URL */}
+                    <Input
+                        label="YouTube Video URL (Optional)"
+                        value={youtubeUrl}
+                        onChange={e => setYoutubeUrl(e.target.value)}
+                        placeholder="https://www.youtube.com/watch?v=..."
+                    />
 
                     {/* PDF Selection */}
                     <div className="space-y-2">
@@ -144,14 +128,14 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
                     </div>
 
                     {/* Selected Material Preview (Mini) */}
-                    {(selectedVideoId || selectedPdfId) && (
+                    {(youtubeUrl || selectedPdfId) && (
                         <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm">
                             <p className="font-medium text-gray-700 mb-2">Lesson Content Preview:</p>
                             <ul className="space-y-1 text-gray-600">
-                                {selectedVideoId && (
+                                {youtubeUrl && (
                                     <li className="flex items-center gap-2">
                                         <Video size={14} className="text-blue-500" />
-                                        Video: {availableMaterials.find(m => m.id === selectedVideoId)?.title}
+                                        Video: {youtubeUrl}
                                     </li>
                                 )}
                                 {selectedPdfId && (

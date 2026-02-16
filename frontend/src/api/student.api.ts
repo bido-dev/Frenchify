@@ -1,7 +1,7 @@
 import api from './index';
 
 export interface Course {
-    courseId: string;
+    id: string;
     title: string;
     description: string;
     isPaid: boolean;
@@ -13,7 +13,7 @@ export interface Course {
 }
 
 export interface Material {
-    materialId: string;
+    id: string;
     title: string;
     type: 'video' | 'youtube' | 'quiz' | 'pdf';
     url: string;

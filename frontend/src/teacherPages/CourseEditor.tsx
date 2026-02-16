@@ -5,7 +5,7 @@ import { AddLessonModal } from './components/AddLessonModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
-import { ArrowLeft, Save, Video, Youtube, FileText, Trash2, AlertCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Save, Video, Youtube, FileText, Trash2, AlertCircle, BookOpen, Edit2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
     createCourse,
@@ -17,10 +17,12 @@ import {
     createLesson,
     getCourseLessons,
     deleteLesson,
+    updateLesson,
     type LessonData,
     type LessonCreateData,
 } from '../api/lesson.api';
 import { AddMaterialModal } from './components/AddMaterialModal';
+import { EditLessonModal } from './components/EditLessonModal';
 import {
     getCourseMaterials,
     addMaterial,
@@ -44,6 +46,7 @@ export const CourseEditor: React.FC = () => {
 
     // Delete lesson state
     const [deletingLesson, setDeletingLesson] = useState<LessonData | null>(null);
+    const [editingLesson, setEditingLesson] = useState<LessonData | null>(null);
 
     const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -164,6 +167,21 @@ export const CourseEditor: React.FC = () => {
             setToast({ message: 'Lesson created successfully.', variant: 'success' });
         } catch (err: any) {
             setToast({ message: err.response?.data?.message || 'Failed to create lesson.', variant: 'error' });
+        }
+    };
+
+    const handleUpdateLesson = async (lessonId: string, lessonData: LessonCreateData) => {
+        if (!savedCourseId) return;
+
+        try {
+            await updateLesson(savedCourseId, lessonId, lessonData);
+            // Reload lessons
+            const updated = await getCourseLessons(savedCourseId);
+            setLessons(updated);
+            setToast({ message: 'Lesson updated successfully.', variant: 'success' });
+            setEditingLesson(null);
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to update lesson.', variant: 'error' });
         }
     };
 
@@ -325,14 +343,24 @@ export const CourseEditor: React.FC = () => {
                                                 </div>
                                                 <h4 className="font-medium text-gray-900">{lesson.title}</h4>
                                             </div>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                                                onClick={() => setDeletingLesson(lesson)}
-                                            >
-                                                <Trash2 size={16} />
-                                            </Button>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-blue-500 hover:text-blue-700 h-8 w-8 p-0"
+                                                    onClick={() => setEditingLesson(lesson)}
+                                                >
+                                                    <Edit2 size={16} />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                                                    onClick={() => setDeletingLesson(lesson)}
+                                                >
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </div>
                                         </div>
 
                                         <div className="flex gap-2 pl-11">
@@ -479,6 +507,16 @@ export const CourseEditor: React.FC = () => {
                 onClose={() => setIsMaterialModalOpen(false)}
                 onSave={handleAddMaterial}
             />
+
+            {editingLesson && (
+                <EditLessonModal
+                    isOpen={!!editingLesson}
+                    onClose={() => setEditingLesson(null)}
+                    onSave={handleUpdateLesson}
+                    lesson={editingLesson}
+                    availableMaterials={materials}
+                />
+            )}
 
             {/* Delete Lesson Modal */}
             <Modal

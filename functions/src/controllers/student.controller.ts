@@ -46,7 +46,7 @@ export const getCourseById_Handler = async (req: Request, res: Response) => {
             return;
         }
 
-        res.status(200).send(course);
+        res.status(200).send({ id, ...course });
     } catch (error) {
         console.error("Error fetching course:", error);
         res.status(500).send({ message: "Error fetching course" });

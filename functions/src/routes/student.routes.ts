@@ -6,6 +6,7 @@ import {
     getStats,
     getEnrolledCourses
 } from "../controllers/student.controller";
+import { getCourseLessonsHandler } from "../controllers/lesson.controller";
 import { isAuthenticated } from "../middleware/auth";
 
 const router = Router();
@@ -15,6 +16,9 @@ router.get("/courses", getCourses);
 
 // Public: Get course details
 router.get("/courses/:id", getCourseById_Handler);
+
+// Public: Get course lessons
+router.get("/courses/:courseId/lessons", getCourseLessonsHandler);
 
 // Authenticated: Get materials (tier enforcement happens in controller)
 router.get("/courses/:id/materials", isAuthenticated, getCourseMaterials);

@@ -599,8 +599,13 @@ courses/{courseId}
   - teacherId, title, description, category, isPaid, status
   - materials/{materialId}
     - title, type, url, isFreePreview, order
+    - materials/{materialId}
+    - title, type, url, isFreePreview, order
   - questions/{questionId}
     - userId, content, isAnswered, answerText
+  - lessons/{lessonId}
+    - title, video, pdf
+    - materials: [{ id, title, url, type }]  <-- Multiple materials support
 ```
 
 ### Security
@@ -666,27 +671,30 @@ courses/{courseId}
 ```
 functions/src/
 ├── models/         # Database operations (pure functions, no HTTP logic)
-│   ├── user.model.ts
-│   ├── course.model.ts
 │   ├── admin.model.ts
-│   ├── question.model.ts
+│   ├── course.model.ts
 │   ├── enrollment.model.ts  # Student course enrollments
+│   ├── lesson.model.ts      # Lesson CRUD operations
+│   ├── question.model.ts
 │   ├── student.model.ts     # Student statistics
-│   └── teacher.model.ts     # Teacher statistics
+│   ├── teacher.model.ts     # Teacher statistics
+│   └── user.model.ts
 ├── controllers/    # HTTP request handlers (use models for DB operations)
-│   ├── user.controller.ts
-│   ├── course.controller.ts
 │   ├── admin.controller.ts
+│   ├── course.controller.ts
+│   ├── lesson.controller.ts
+│   ├── question.controller.ts
 │   ├── student.controller.ts
 │   ├── teacher.controller.ts
-│   └── question.controller.ts
+│   └── user.controller.ts
 ├── routes/         # Express route definitions with middleware
-│   ├── user.routes.ts
-│   ├── course.routes.ts
 │   ├── admin.routes.ts
+│   ├── course.routes.ts
+│   ├── lesson.routes.ts
+│   ├── question.routes.ts
 │   ├── student.routes.ts
 │   ├── teacher.routes.ts
-│   └── question.routes.ts
+│   └── user.routes.ts
 ├── middleware/     # Authentication and authorization
 │   ├── auth.ts
 │   └── roleCheck.ts
@@ -791,9 +799,9 @@ functions/src/
 - `PATCH /courses/:courseId/publish` - Publish course (checks teacher approval status)
 
 #### Lesson Routes (`/courses/:courseId/lessons`)
-- `POST /` - Create lesson (links to existing material via ID, no direct upload)
-- `GET /` - Get all lessons for a course
-- `PATCH /:lessonId` - Update lesson details
+- `POST /` - Create lesson (links to existing materials via IDs, supports `materials` array)
+- `GET /` - Get all lessons for a course (Public for students via `/students/courses/:id/lessons`)
+- `PATCH /:lessonId` - Update lesson details (title, video, materials)
 - `DELETE /:lessonId` - Delete lesson
 
 #### Question Routes (`/questions`)
@@ -906,6 +914,51 @@ functions/src/
 - `npm run build` - TypeScript compilation (must pass before deploy)
 - `npm run deploy` - Deploy to Firebase Cloud Functions
 - Entry point: `functions/lib/index.js` (compiled from src/index.ts)
+
+## Deployment & Configuration
+
+### Environment Setup
+- **Development**: Uses `.env` with `VITE_USE_EMULATOR=true` to connect to local Firebase Emulators.
+- **Production**: Uses `.env.production` with `VITE_USE_EMULATOR=false` ensuring the app connects to live Firebase services.
+- **IMPORTANT**: Always ensure `.env.production` exists before building for deployment to prevent the app from trying to connect to localhost in production.
+
+### Backend Runtime
+- **Node.js Version**: The project is configured to use `node: "24"` in `functions/package.json`.
+  - *Note*: Ensure your deployment environment supports this version. If deployment fails, check compatibility.
+
+### Firebase Integration (Critical)
+
+#### Required Firestore Indexes
+The application relies on specific composite indexes for complex queries. The `firestore.indexes.json` MUST contain:
+
+1. **Courses Index** (For Teacher Dashboard):
+```json
+{
+  "collectionGroup": "courses",
+  "queryScope": "COLLECTION",
+  "fields": [
+    { "fieldPath": "teacherId", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "DESCENDING" }
+  ]
+}
+```
+
+2. **Questions Index** (For Teacher Q&A):
+```json
+{
+  "collectionGroup": "questions",
+  "queryScope": "COLLECTION_GROUP",
+  "fields": [
+    { "fieldPath": "isAnswered", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "DESCENDING" }
+  ]
+}
+```
+
+#### Storage Security
+- **Rules**: `storage.rules` MUST allow:
+  - **Read**: Public read access for authenticated users (`allow read: if request.auth != null;`).
+  - **Write**: Owner-only write access to `materials/{userId}/{allPaths=**}`.
 
 ## Do NOT
 - ❌ Use `window.location.href` for navigation

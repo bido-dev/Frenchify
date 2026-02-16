@@ -1,41 +1,53 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CourseCard, type CourseCardProps } from '../components/CourseCard';
+import { CourseCard } from '../components/CourseCard';
 import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonCard } from '../components/SkeletonCard';
+import { UpgradeModal } from '../components/UpgradeModal';
 import { BookOpen } from 'lucide-react';
-
-// Mock Data
-const MOCK_COURSES: Omit<CourseCardProps, 'onAction'>[] = [
-    { id: '1', title: 'French Grammar 101', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '', category: 'grammar' },
-    { id: '2', title: 'Advanced Conversation', teacherName: 'Pierre Dupont', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
-    { id: '3', title: 'Business French', teacherName: 'Sarah Smith', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
-    { id: '4', title: 'Daily Vocabulary', teacherName: 'Marie Currie', isPaid: false, userTier: 'free', thumbnailUrl: '', category: 'grammar' },
-    { id: '5', title: 'French Cinema History', teacherName: 'Jean Renoir', isPaid: true, userTier: 'free', thumbnailUrl: '', category: 'conversation' },
-];
+import { getCourses, type Course } from '../api/student.api';
+import { useAuth } from '../contexts/AuthContext';
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const [filter, setFilter] = useState<'all' | 'grammar' | 'conversation'>('all');
+    const [courses, setCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
 
-    // Simulate loading courses
+    // Fetch courses from API
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
-        return () => clearTimeout(timer);
-    }, []);
+        const fetchCourses = async () => {
+            setIsLoading(true);
+            try {
+                // Pass undefined if filter is 'all', otherwise pass the category
+                const category = filter === 'all' ? undefined : filter;
+                const data = await getCourses(category);
+                setCourses(data);
+            } catch (error) {
+                console.error('Failed to fetch courses:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    // Filter courses based on category
-    const filteredCourses = MOCK_COURSES.filter(course => {
-        if (filter === 'all') return true;
-        return course.category === filter;
-    });
+        fetchCourses();
+    }, [filter]);
 
     const handleCourseAction = (id: string) => {
-        navigate(`/course/${id}`);
+        const course = courses.find(c => c.id === id);
+        if (!course) return;
+
+        // Check availability logic
+        const isLocked = course.isPaid && user?.tier === 'free';
+
+        if (isLocked) {
+            setIsUpgradeModalOpen(true);
+        } else {
+            navigate(`/course/${id}`);
+        }
     };
 
     return (
@@ -43,9 +55,9 @@ export const Dashboard: React.FC = () => {
             {/* Header */}
             <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-lg relative overflow-hidden">
                 <div className="relative z-10">
-                    <h1 className="text-3xl font-bold mb-2">Bienvenue, Student!</h1>
+                    <h1 className="text-3xl font-bold mb-2">Bienvenue, {user?.name || 'Student'}!</h1>
                     <p className="text-blue-100 max-w-xl">
-                        Ready to continue your French journey today? You have a 3-day streak!
+                        Ready to continue your French journey today?
                     </p>
                 </div>
                 {/* Decorative circle */}
@@ -85,7 +97,7 @@ export const Dashboard: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(i => <SkeletonCard key={i} />)}
                 </div>
-            ) : filteredCourses.length === 0 ? (
+            ) : courses.length === 0 ? (
                 <EmptyState
                     icon={BookOpen}
                     title="No courses found"
@@ -97,17 +109,30 @@ export const Dashboard: React.FC = () => {
                 />
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredCourses.map(course => (
+                    {courses.map(course => (
                         <CourseCard
                             key={course.id}
-                            {...course}
+                            id={course.id}
+                            title={course.title}
+                            teacherName={course.teacherName}
+                            thumbnailUrl="" // API doesn't return thumbnail yet
+                            isPaid={course.isPaid}
+                            userTier={user?.tier || 'free'}
+                            category={course.category}
                             onAction={handleCourseAction}
                         />
                     ))}
                 </div>
             )}
+
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={isUpgradeModalOpen}
+                onClose={() => setIsUpgradeModalOpen(false)}
+            />
         </div>
     );
 };
 
 export default Dashboard;
+

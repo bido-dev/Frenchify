@@ -29,7 +29,8 @@ export const createLessonHandler = async (req: Request, res: Response) => {
         const lessonId = await lessonModel.addLesson(courseId, {
             title,
             video,
-            pdf
+            pdf,
+            materials: req.body.materials
         });
 
         return res.status(201).json({ id: lessonId, message: "Lesson created successfully" });

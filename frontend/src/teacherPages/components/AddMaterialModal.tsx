@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { X, Youtube, Upload, FileText, CheckCircle, AlertCircle, Video } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, Video } from 'lucide-react';
 import { storage, auth } from '../../config/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
@@ -11,10 +11,10 @@ interface AddMaterialModalProps {
     onSave: (material: any) => void;
 }
 
-type MaterialType = 'youtube' | 'video' | 'quiz' | 'pdf';
+type MaterialType = 'video' | 'quiz' | 'pdf';
 
 export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onClose, onSave }) => {
-    const [type, setType] = useState<MaterialType>('youtube');
+    const [type, setType] = useState<MaterialType>('video');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState(''); // URL for YouTube
     const [file, setFile] = useState<File | null>(null);
@@ -90,9 +90,6 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                     return;
                 }
                 finalContent = await uploadFile();
-            } else if (type === 'youtube' && !content) {
-                setError('Please enter a YouTube URL');
-                return;
             }
 
             onSave({ type, title, url: finalContent, isFreePreview: isFree });
@@ -123,15 +120,6 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-3">Material Type</label>
                         <div className="grid grid-cols-4 gap-2">
-                            <button
-                                type="button"
-                                onClick={() => setType('youtube')}
-                                className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${type === 'youtube' ? 'border-red-500 bg-red-50 text-red-700' : 'border-gray-200 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <Youtube className="mb-2 w-5 h-5" />
-                                <span className="text-[10px] font-medium uppercase">YouTube</span>
-                            </button>
                             <button
                                 type="button"
                                 onClick={() => setType('video')}
@@ -170,14 +158,7 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                         required
                     />
 
-                    {type === 'youtube' && (
-                        <Input
-                            label="YouTube URL"
-                            value={content}
-                            onChange={e => setContent(e.target.value)}
-                            placeholder="https://youtube.com/watch?v=..."
-                        />
-                    )}
+
 
                     {(type === 'video' || type === 'pdf') && (
                         <div>

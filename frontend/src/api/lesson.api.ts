@@ -14,6 +14,12 @@ export interface LessonData {
     quiz?: {
         id: string;
     };
+    materials?: {
+        id: string;
+        title: string;
+        url: string;
+        type: string;
+    }[];
 }
 
 export interface LessonCreateData {
@@ -26,6 +32,12 @@ export interface LessonCreateData {
         url: string;
         title: string;
     };
+    materials?: {
+        id: string;
+        title: string;
+        url: string;
+        type: string;
+    }[];
 }
 
 /** Create a new lesson */
@@ -36,7 +48,7 @@ export const createLesson = async (courseId: string, data: LessonCreateData): Pr
 
 /** Get all lessons for a course */
 export const getCourseLessons = async (courseId: string): Promise<LessonData[]> => {
-    const response = await api.get(`/courses/${courseId}/lessons`);
+    const response = await api.get(`/students/courses/${courseId}/lessons`);
     return response.data;
 };
 

@@ -165,6 +165,47 @@ async function seedMockData() {
 
         console.log(`  ✓ Created 2 questions (1 pending, 1 answered)`);
 
+        // 5. Create sample Lessons (for Sidebar)
+        console.log("\n📚 Creating sample lessons...");
+
+        // Lesson 1: Video
+        await db.collection("courses").doc(course1.id).collection("lessons").add({
+            title: "Introduction to French Nouns",
+            video: {
+                type: "video",
+                url: "https://www.w3schools.com/html/mov_bbb.mp4"
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
+
+        // Lesson 2: YouTube
+        await db.collection("courses").doc(course1.id).collection("lessons").add({
+            title: "The Gender of Nouns",
+            video: {
+                type: "youtube",
+                url: "dQw4w9WgXcQ"
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        });
+
+        console.log(`  ✓ Created 2 lessons for Course 1`);
+
+        // 6. Create sample Materials (for Resources section)
+        console.log("\n📚 Creating sample resources...");
+
+        // Resource: PDF Cheatsheet
+        await db.collection("courses").doc(course1.id).collection("materials").add({
+            title: "Noun Gender Cheatsheet",
+            type: "pdf",
+            url: "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf",
+            order: 1,
+            createdAt: new Date().toISOString()
+        });
+
+        console.log(`  ✓ Created 1 resource for Course 1`);
+
         console.log("\n✅ Mock data seeded successfully!");
         console.log("\n📊 Test Credentials:");
         console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
