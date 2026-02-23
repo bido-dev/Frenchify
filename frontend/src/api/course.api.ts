@@ -86,3 +86,34 @@ export const updateMaterial = async (courseId: string, materialId: string, data:
 export const deleteMaterial = async (courseId: string, materialId: string): Promise<void> => {
     await api.delete(`/courses/${courseId}/materials/${materialId}`);
 };
+
+// ===== Quiz Generation Types =====
+
+export type QuestionType = 'mcq' | 'true_false' | 'fill_blank';
+export type QuizLanguage = 'english' | 'french';
+export type QuizDifficulty = 'easy' | 'medium' | 'hard';
+
+export interface QuizQuestion {
+    id: number;
+    type: QuestionType;
+    question: string;
+    options?: string[];
+    correctAnswer: string;
+    explanation?: string;
+}
+
+export interface GenerateQuizRequest {
+    title: string;
+    numberOfQuestions: number;
+    language: QuizLanguage;
+    questionTypes: QuestionType[];
+    difficulty: QuizDifficulty;
+    isFreePreview: boolean;
+    pdfUrls: string[];
+}
+
+/** Generate a quiz using Gemini AI from PDFs */
+export const generateQuiz = async (courseId: string, data: GenerateQuizRequest): Promise<{ quiz: QuizQuestion[] }> => {
+    const response = await api.post(`/courses/${courseId}/materials/generate-quiz`, data);
+    return response.data;
+};

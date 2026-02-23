@@ -75,6 +75,14 @@ export const getCourseQuestions = async (courseId: string): Promise<Question[]> 
 };
 
 /**
+ * Get all questions asked by the logged-in student across all courses
+ */
+export const getMyQuestions = async (): Promise<Question[]> => {
+    const response = await api.get('/questions/student/my');
+    return response.data;
+};
+
+/**
  * Student Stats and Enrollment APIs
  */
 

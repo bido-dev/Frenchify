@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createQuestion, getQuestionsByCourse, answerQuestion, getUnansweredQuestions } from "../models/question.model";
+import { createQuestion, getQuestionsByCourse, answerQuestion, getUnansweredQuestions, getStudentQuestions } from "../models/question.model";
 import { checkCourseOwnership } from "../models/course.model";
 import { getUserById } from "../models/user.model";
 
@@ -117,5 +117,28 @@ export const getTeacherUnansweredQuestions = async (req: Request, res: Response)
     } catch (error) {
         console.error("Error fetching unanswered questions:", error);
         res.status(500).send({ message: "Error fetching unanswered questions" });
+    }
+};
+
+/**
+ * Get all questions asked by a specific student
+ * GET /questions/student/my
+ */
+export const getStudentQuestionsHandler = async (req: Request, res: Response) => {
+    try {
+        const uid = req.user?.uid;
+
+        if (!uid) {
+            res.status(401).send({ message: "Unauthorized" });
+            return;
+        }
+
+        // Use model layer for database operation
+        const questions = await getStudentQuestions(uid);
+
+        res.status(200).send(questions);
+    } catch (error) {
+        console.error("Error fetching student questions:", error);
+        res.status(500).send({ message: "Error fetching student questions" });
     }
 };

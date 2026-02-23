@@ -13,6 +13,8 @@ export interface LessonData {
     };
     quiz?: {
         id: string;
+        title: string;
+        url: string;
     };
     materials?: {
         id: string;
@@ -31,6 +33,11 @@ export interface LessonCreateData {
     pdf?: {
         url: string;
         title: string;
+    };
+    quiz?: {
+        id: string;
+        title: string;
+        url: string;
     };
     materials?: {
         id: string;

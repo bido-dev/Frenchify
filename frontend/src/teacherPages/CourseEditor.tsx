@@ -185,14 +185,17 @@ export const CourseEditor: React.FC = () => {
         }
     };
 
-    const handleAddMaterial = async (materialData: MaterialCreateData) => {
+    const handleAddMaterial = async (materialData: MaterialCreateData | null) => {
         if (!savedCourseId) {
             setToast({ message: 'Save the course first before adding materials.', variant: 'error' });
             return;
         }
 
         try {
-            await addMaterial(savedCourseId, materialData);
+            // If materialData is null, the quiz was already saved by the backend
+            if (materialData) {
+                await addMaterial(savedCourseId, materialData);
+            }
             // Reload materials
             const updated = await getCourseMaterials(savedCourseId);
             setMaterials(updated);
@@ -506,6 +509,7 @@ export const CourseEditor: React.FC = () => {
                 isOpen={isMaterialModalOpen}
                 onClose={() => setIsMaterialModalOpen(false)}
                 onSave={handleAddMaterial}
+                courseId={savedCourseId || ''}
             />
 
             {editingLesson && (

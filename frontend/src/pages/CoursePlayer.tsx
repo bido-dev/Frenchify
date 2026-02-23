@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Button } from '../components/Button';
-import { ArrowLeft, Download, MessageSquare, FileText, Video } from 'lucide-react';
-import { getCourse, getCourseMaterials, type Course, type Material } from '../api/student.api';
+import { ArrowLeft, Download, MessageSquare, FileText, Video, Sparkles } from 'lucide-react';
+import { getCourse, getCourseMaterials, askQuestion, type Course, type Material } from '../api/student.api';
 import { getCourseLessons, type LessonData } from '../api/lesson.api';
+import { QuizPlayer, type QuizQuestion } from '../components/QuizPlayer';
 
 export const CoursePlayer: React.FC = () => {
     const { courseId } = useParams();
@@ -12,6 +13,14 @@ export const CoursePlayer: React.FC = () => {
     const [resources, setResources] = useState<Material[]>([]);
     const [selectedLesson, setSelectedLesson] = useState<(LessonData & { id: string }) | null>(null);
     const [loading, setLoading] = useState(true);
+
+    // Quiz State
+    const [activeQuiz, setActiveQuiz] = useState<{ title: string; questions: QuizQuestion[] } | null>(null);
+
+    // Q&A State
+    const [isAsking, setIsAsking] = useState(false);
+    const [questionText, setQuestionText] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -52,6 +61,22 @@ export const CoursePlayer: React.FC = () => {
     const handleDownload = (url: string) => {
         if (url) {
             window.open(url, '_blank');
+        }
+    };
+
+    const handleAskQuestion = async () => {
+        if (!courseId || !questionText.trim()) return;
+        setIsSubmitting(true);
+        try {
+            await askQuestion(courseId, questionText.trim());
+            setQuestionText('');
+            setIsAsking(false);
+            alert("Your question has been posted successfully and will be reviewed by a teacher.");
+        } catch (error) {
+            console.error("Error posting question:", error);
+            alert("Failed to post your question. Please try again.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -158,19 +183,41 @@ export const CoursePlayer: React.FC = () => {
                         </p>
 
                         <div className="mt-6 flex flex-wrap gap-4 pt-6 border-t border-gray-100">
-                            {/* Render Download Buttons for Resources (Global Course Resources) */}
+                            {/* Render Download/Quiz Buttons for Resources (Global Course Resources) */}
                             {resources.length > 0 ? (
-                                resources.map(resource => (
-                                    <Button
-                                        key={resource.id}
-                                        variant="ghost"
-                                        className="text-blue-600 bg-blue-50 hover:bg-blue-100"
-                                        onClick={() => handleDownload(resource.url)}
-                                    >
-                                        <Download className="w-4 h-4 mr-2" />
-                                        Download {resource.title}
-                                    </Button>
-                                ))
+                                resources.map(resource => {
+                                    if (resource.type === 'quiz') {
+                                        return (
+                                            <Button
+                                                key={resource.id}
+                                                variant="ghost"
+                                                className="text-purple-600 bg-purple-50 hover:bg-purple-100"
+                                                onClick={() => {
+                                                    try {
+                                                        const parsed = JSON.parse(resource.url);
+                                                        setActiveQuiz({ title: resource.title, questions: parsed });
+                                                    } catch {
+                                                        alert('Failed to load quiz data.');
+                                                    }
+                                                }}
+                                            >
+                                                <Sparkles className="w-4 h-4 mr-2" />
+                                                Take Quiz: {resource.title}
+                                            </Button>
+                                        );
+                                    }
+                                    return (
+                                        <Button
+                                            key={resource.id}
+                                            variant="ghost"
+                                            className="text-blue-600 bg-blue-50 hover:bg-blue-100"
+                                            onClick={() => handleDownload(resource.url)}
+                                        >
+                                            <Download className="w-4 h-4 mr-2" />
+                                            Download {resource.title}
+                                        </Button>
+                                    );
+                                })
                             ) : null}
 
                             {/* Lesson Specific Materials */}
@@ -204,7 +251,26 @@ export const CoursePlayer: React.FC = () => {
                                 </Button>
                             ) : null}
 
-                            {resources.length === 0 && !selectedLesson?.pdf && (!selectedLesson?.materials || selectedLesson.materials.length === 0) && (
+                            {/* Lesson-attached Quiz */}
+                            {selectedLesson?.quiz && (
+                                <Button
+                                    variant="ghost"
+                                    className="text-purple-600 bg-purple-50 hover:bg-purple-100"
+                                    onClick={() => {
+                                        try {
+                                            const parsed = JSON.parse(selectedLesson.quiz!.url);
+                                            setActiveQuiz({ title: selectedLesson.quiz!.title, questions: parsed });
+                                        } catch {
+                                            alert('Failed to load quiz data.');
+                                        }
+                                    }}
+                                >
+                                    <Sparkles className="w-4 h-4 mr-2" />
+                                    Start Quiz: {selectedLesson.quiz.title}
+                                </Button>
+                            )}
+
+                            {resources.length === 0 && !selectedLesson?.pdf && !selectedLesson?.quiz && (!selectedLesson?.materials || selectedLesson.materials.length === 0) && (
                                 <Button
                                     variant="ghost"
                                     className="text-gray-400 bg-gray-50 cursor-not-allowed"
@@ -215,12 +281,54 @@ export const CoursePlayer: React.FC = () => {
                                 </Button>
                             )}
 
-                            <Button variant="ghost" className="text-gray-600">
-                                <MessageSquare className="w-4 h-4 mr-2" />
-                                Ask Question
-                            </Button>
+                            {isAsking ? (
+                                <div className="w-full mt-4 space-y-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                    <textarea
+                                        value={questionText}
+                                        onChange={(e) => setQuestionText(e.target.value)}
+                                        placeholder="Type your question related to this course..."
+                                        className="w-full p-3 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                                        rows={3}
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            onClick={() => { setIsAsking(false); setQuestionText(''); }}
+                                            disabled={isSubmitting}
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button
+                                            variant="primary"
+                                            onClick={handleAskQuestion}
+                                            disabled={isSubmitting || !questionText.trim()}
+                                            className="bg-blue-600 hover:bg-blue-700 font-medium border-transparent text-white"
+                                        >
+                                            {isSubmitting ? 'Posting...' : 'Post Question'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Button variant="ghost" className="text-gray-600 w-full justify-start" onClick={() => setIsAsking(true)}>
+                                    <MessageSquare className="w-4 h-4 mr-2" />
+                                    Ask Question about this course
+                                </Button>
+                            )}
                         </div>
                     </div>
+
+                    {/* Active Quiz Player */}
+                    {activeQuiz && (
+                        <div className="mt-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <h3 className="text-lg font-bold text-gray-900">📝 Quiz</h3>
+                                <Button variant="ghost" size="sm" onClick={() => setActiveQuiz(null)}>
+                                    Close Quiz
+                                </Button>
+                            </div>
+                            <QuizPlayer title={activeQuiz.title} questions={activeQuiz.questions} />
+                        </div>
+                    )}
                 </div>
 
                 {/* Sidebar / Syllabus */}

@@ -52,6 +52,11 @@ export const addLesson = async (
             url: string;
             type: string;
         }[];
+        quiz?: {
+            id: string;
+            title: string;
+            url: string;
+        };
     }
 ): Promise<string> => {
     const newLesson = {
@@ -59,7 +64,7 @@ export const addLesson = async (
         video: lessonData.video || null,
         pdf: lessonData.pdf || null,
         materials: lessonData.materials || [],
-        quiz: null, // Placeholder
+        quiz: lessonData.quiz || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };

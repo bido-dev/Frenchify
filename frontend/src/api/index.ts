@@ -3,7 +3,6 @@ import { auth } from '../config/firebase';
 
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/frenchify/us-central1/api',
-    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
     },

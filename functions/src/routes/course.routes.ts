@@ -9,6 +9,7 @@ import {
     deleteMaterialHandler,
     getCourseMaterialsHandler
 } from "../controllers/course.controller";
+import { generateQuiz } from "../controllers/quiz.controller";
 import {
     createLessonHandler,
     updateLessonHandler,
@@ -28,6 +29,7 @@ router.patch("/:courseId", updateCourseHandler); // Update course
 router.delete("/:courseId", deleteCourseHandler); // Delete course
 router.get("/:courseId/materials", getCourseMaterialsHandler); // Get all materials (owner only)
 router.post("/:courseId/materials", addMaterial); // [PRD 8]
+router.post("/:courseId/materials/generate-quiz", generateQuiz); // Generate AI Quiz
 router.patch("/:courseId/materials/:materialId", updateMaterialHandler); // Update material
 router.delete("/:courseId/materials/:materialId", deleteMaterialHandler); // Delete material
 router.patch("/:courseId/publish", publishCourse); // [PRD 6]

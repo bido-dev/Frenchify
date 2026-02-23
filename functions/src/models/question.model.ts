@@ -159,3 +159,23 @@ export const getQuestionById = async (
         ...questionDoc.data()
     } as QuestionData;
 };
+
+/**
+ * Get all questions asked by a specific student across all courses
+ * @param studentId - Student's UID
+ * @returns Array of questions with course info
+ */
+export const getStudentQuestions = async (
+    studentId: string
+): Promise<QuestionData[]> => {
+    const questionsSnapshot = await db
+        .collectionGroup("questions")
+        .where("userId", "==", studentId)
+        .orderBy("createdAt", "desc")
+        .get();
+
+    return questionsSnapshot.docs.map(doc => ({
+        questionId: doc.id,
+        ...doc.data()
+    } as QuestionData));
+};

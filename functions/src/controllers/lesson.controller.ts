@@ -8,7 +8,7 @@ import { checkCourseOwnership } from "../models/course.model";
 export const createLessonHandler = async (req: Request, res: Response) => {
     try {
         const { courseId } = req.params as { courseId: string };
-        const { title, video, pdf } = req.body;
+        const { title, video, pdf, quiz, materials } = req.body;
         const userId = req.user?.uid;
 
         if (!userId) {
@@ -30,7 +30,8 @@ export const createLessonHandler = async (req: Request, res: Response) => {
             title,
             video,
             pdf,
-            materials: req.body.materials
+            quiz,
+            materials: materials
         });
 
         return res.status(201).json({ id: lessonId, message: "Lesson created successfully" });

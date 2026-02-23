@@ -232,11 +232,6 @@ interface TeacherApprovalAction {
 
 #### Teacher Pages (`src/teacherPages/`)
 
-- **TeacherLayout.tsx** - Main layout for teacher dashboard
-  - Sidebar navigation customized for teachers
-  - Mobile-responsive design
-  - Shared header with user profile
-
 - **TeacherDashboard.tsx** - Overview hub
   - **Stats Cards**: Total courses, active students, pending questions
   - **Courses List**: Display courses with status (Draft/Published) and enrollment counts
@@ -288,6 +283,7 @@ The frontend uses a centralized API layer with axios for all HTTP requests:
   - `getCourseMaterials(courseId)` - Get materials (tier-enforced by backend)
   - `askQuestion(courseId, content)` - Post question (paid tier only)
   - `getCourseQuestions(courseId)` - Get all Q&A for a course
+  - `getMyQuestions()` - Get all questions asked by the logged-in student across all courses
   - `getStudentStats()` - Get student statistics (enrolled, completed, hours, streak)
   - `getEnrolledCourses()` - Get enrolled courses with progress
   - Returns `StudentStats` and `EnrolledCourse` interfaces
@@ -616,17 +612,21 @@ courses/{courseId}
 
 ## Layout Components
 
-### Navbar
-- Fixed position with backdrop blur
-- Different nav items for student/teacher/admin roles
-- Responsive hamburger menu on mobile
-- Ensure sufficient padding/margins (`pb-118`) to prevent overflow clipping
+### Unified Layout (`Layout.tsx`)
+- Main container used for both **Student** and **Teacher** roles.
+- Features a sticky top navbar (Frenchify logo, profile icon, clear view) and a **responsive sidebar** toggled by a hamburger menu.
+- Sidebar dynamically renders navigation links based on user role (`useAuth()`):
+  - **Student**: Catalog (`/dashboard`), My Questions (`/my-questions`), Profile (`/profile`).
+  - **Teacher**: Courses (`/teacher/dashboard`), My Questions (`/teacher/questions`), Profile (`/profile`).
+
+### Admin Layout (`AdminLayout.tsx`)
+- Dedicated layout for administrative tasks with its own sidebar configuration.
 
 ## Routing
 
 ### Route Structure
 - Public: `/`, `/login`, `/register`
-- Student (Protected): `/dashboard`, `/course/:id`, `/profile`
+- Student (Protected): `/dashboard`, `/course/:id`, `/my-questions`, `/profile`
 - Teacher (Protected): `/teacher/dashboard`, `/teacher/course/:id/edit`, `/teacher/questions`
 - Admin (Protected): `/admin` (redirects to `/admin/approvals`), `/admin/users`, `/admin/create-admin`
 
@@ -794,6 +794,10 @@ functions/src/
 - `DELETE /courses/:courseId` - Delete course
 - `POST /courses/:courseId/materials` - Add material to library (YouTube/video/quiz/PDF)
   - Storage path: `materials/{userId}/{timestamp}_{filename}`
+- `POST /courses/:courseId/materials/generate-quiz` - **AI Quiz Generation** (requires: isAuthenticated + isTeacher)
+  - Body: `{ title, numberOfQuestions, language, questionTypes, difficulty, isFreePreview, pdfUrls }`
+  - Fetches PDFs from Firebase Storage URLs, extracts text with `pdf-parse`, calls Gemini API
+  - Saves the generated quiz JSON (stringified) as a material with `type: 'quiz'`
 - `PATCH /courses/:courseId/materials/:materialId` - Update material
 - `DELETE /courses/:courseId/materials/:materialId` - Delete material
 - `PATCH /courses/:courseId/publish` - Publish course (checks teacher approval status)
@@ -805,6 +809,7 @@ functions/src/
 - `DELETE /:lessonId` - Delete lesson
 
 #### Question Routes (`/questions`)
+- `GET /questions/student/my` - Get all questions asked by the student across all courses (requires: isAuthenticated)
 - `POST /questions/:courseId` - Student asks question (requires: isAuthenticated + isPaidTier)
 - `GET /questions/:courseId` - Get all questions for a course (public)
 - `PATCH /questions/:courseId/:questionId/answer` - Teacher answers question (requires: isAuthenticated + isTeacher)
@@ -865,9 +870,21 @@ functions/src/
 {
   title: string;
   type: "video" | "youtube" | "quiz" | "pdf";
-  url: string;
+  url: string;           // For quizzes: stringified JSON array of QuizQuestion[]
   isFreePreview: boolean;
   order: number;
+}
+```
+
+#### QuizQuestion (stored as JSON string in `MaterialData.url` when `type === 'quiz'`)
+```typescript
+{
+  id: number;
+  type: "mcq" | "true_false" | "fill_blank";
+  question: string;
+  options?: string[];       // MCQ: 4 options, True/False: ["True", "False"], Fill: absent
+  correctAnswer: string;   // Must match one of options for MCQ/True-False
+  explanation?: string;
 }
 ```
 
@@ -914,6 +931,61 @@ functions/src/
 - `npm run build` - TypeScript compilation (must pass before deploy)
 - `npm run deploy` - Deploy to Firebase Cloud Functions
 - Entry point: `functions/lib/index.js` (compiled from src/index.ts)
+- **`skipLibCheck: true`** is set in `tsconfig.json` for `@google/genai` compatibility
+
+## AI Quiz Generation Feature
+
+### Architecture
+- **Backend Service**: `functions/src/services/gemini.service.ts`
+  - Uses `@google/genai` SDK (`GoogleGenAI` class)
+  - Model: `gemini-2.5-flash` (Note: 2.0-flash is deprecated and unsupported)
+  - Prompts Gemini with combined PDF text + parameters, returns structured JSON array
+- **Backend Controller**: `functions/src/controllers/quiz.controller.ts`
+  - Fetches each PDF URL via `fetch()`, extracts text using `pdf-parse` v2 syntax (`new PDFParse({ data: buffer }).getText()`)
+  - Calls `generateQuizFromAI()`, saves result via `addMaterialToCourse()` as `type: 'quiz'`
+  - Route: `POST /courses/:courseId/materials/generate-quiz`
+
+### Quiz Parameters
+```typescript
+{
+  title: string;                               // Quiz name saved as material title
+  numberOfQuestions: number;                    // 1-40
+  language: "english" | "french";
+  questionTypes: ("mcq" | "true_false" | "fill_blank")[];
+  difficulty: "easy" | "medium" | "hard";
+  isFreePreview: boolean;
+  pdfUrls: string[];                           // Firebase Storage download URLs
+}
+```
+
+### Frontend Components
+- **`AddMaterialModal.tsx`** (`teacherPages/components/`)
+  - Type selector: Video Upload / PDF File / **AI Quiz**
+  - Quiz tab: Displays a dropdown to select *existing* PDFs from the course library, question count slider (1-40), language picker (🇫🇷/🇬🇧), question type checkboxes, difficulty buttons.
+  - Generates the quiz via API; on success, the quiz is saved directly to the database.
+- **`AddLessonModal.tsx`** (`teacherPages/components/`)
+  - Teachers can select an *existing* Auto-Generated Quiz to attach to a specific lesson, exactly like legacy PDFs.
+  - The lesson's `quiz` field in Firestore is populated with `{ id, title, url }` containing the quiz stringified JSON.
+- **`QuizPlayer.tsx`** (`components/`)
+  - Renders questions one-by-one with a progress bar header
+  - MCQ / True-False: clickable option buttons (highlighted green/red post-submit)
+  - Fill-in-the-Blank: text input with correct answer shown on submit
+  - Navigation dots, Previous/Next/Submit Quiz/View Results buttons
+  - Results screen: score %, question-by-question review, Retry button
+- **`CoursePlayer.tsx`** (`pages/`)
+  - Lesson-specific quizzes show a **"Start Quiz"** button (purple) right below the lesson PDF.
+  - Global Course materials show a **"Take Quiz"** button (purple).
+  - Clicking them parses `material.url` JSON and renders `<QuizPlayer />` inline over the video area.
+
+### Timeout Configuration
+- When using the Gemini API and Firebase HTTP Functions, requests can take 15-40 seconds. Ensure **Axios timeouts are disabled/removed** in `api/index.ts` so requests don't abort at 10000ms.
+
+### Required Environment Variable
+```
+GEMINI_API_KEY=<your-api-key>
+```
+Must be set in Firebase Functions environment (`functions/.env` for emulator, Firebase Config for production).
+
 
 ## Deployment & Configuration
 
@@ -950,6 +1022,18 @@ The application relies on specific composite indexes for complex queries. The `f
   "queryScope": "COLLECTION_GROUP",
   "fields": [
     { "fieldPath": "isAnswered", "order": "ASCENDING" },
+    { "fieldPath": "createdAt", "order": "DESCENDING" }
+  ]
+}
+```
+
+3. **Student Questions Index** (For Student My Questions Page):
+```json
+{
+  "collectionGroup": "questions",
+  "queryScope": "COLLECTION_GROUP",
+  "fields": [
+    { "fieldPath": "userId", "order": "ASCENDING" },
     { "fieldPath": "createdAt", "order": "DESCENDING" }
   ]
 }

@@ -19,6 +19,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
     // Lesson Data
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [selectedPdfId, setSelectedPdfId] = useState<string>('');
+    const [selectedQuizId, setSelectedQuizId] = useState<string>('');
 
     if (!isOpen) return null;
 
@@ -51,15 +52,22 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
                 }
             }
 
+            // Handle Quiz
+            if (selectedQuizId) {
+                const quizMaterial = availableMaterials.find(m => m.id === selectedQuizId);
+                if (quizMaterial) {
+                    lessonData.quiz = { id: quizMaterial.id, title: quizMaterial.title, url: quizMaterial.url };
+                }
+            }
+
             onSave(lessonData);
             onClose();
 
             // Reset form
             setTitle('');
-            setTitle('');
             setYoutubeUrl('');
             setSelectedPdfId('');
-            setSelectedPdfId('');
+            setSelectedQuizId('');
         } catch (err: any) {
             console.error('Creation failed:', err);
             setError(err.message || 'Failed to create lesson');
@@ -68,6 +76,7 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
 
     // Filter materials by type
     const pdfMaterials = availableMaterials.filter(m => m.type === 'pdf');
+    const quizMaterials = availableMaterials.filter(m => m.type === 'quiz');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -118,17 +127,30 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
                         )}
                     </div>
 
-                    {/* Quiz Section Placeholder */}
-                    <div className="space-y-3">
-                        <label className="block text-sm font-medium text-gray-700">Quiz (Coming Soon)</label>
-                        <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 flex items-center gap-2">
-                            <CheckCircle className="w-4 h-4" />
-                            Quiz builder will be available in future updates.
-                        </div>
+                    {/* Quiz Selection */}
+                    <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">Quiz (Optional)</label>
+                        <select
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                            value={selectedQuizId}
+                            onChange={(e) => setSelectedQuizId(e.target.value)}
+                        >
+                            <option value="">-- Select a Quiz --</option>
+                            {quizMaterials.map(m => (
+                                <option key={m.id} value={m.id}>
+                                    🧠 {m.title}
+                                </option>
+                            ))}
+                        </select>
+                        {quizMaterials.length === 0 && (
+                            <p className="text-xs text-amber-600">
+                                No quizzes available. Generate one in the Materials Library first.
+                            </p>
+                        )}
                     </div>
 
                     {/* Selected Material Preview (Mini) */}
-                    {(youtubeUrl || selectedPdfId) && (
+                    {(youtubeUrl || selectedPdfId || selectedQuizId) && (
                         <div className="bg-gray-50 p-3 rounded-lg border border-gray-100 text-sm">
                             <p className="font-medium text-gray-700 mb-2">Lesson Content Preview:</p>
                             <ul className="space-y-1 text-gray-600">
@@ -142,6 +164,12 @@ export const AddLessonModal: React.FC<AddLessonModalProps> = ({ isOpen, onClose,
                                     <li className="flex items-center gap-2">
                                         <FileText size={14} className="text-orange-500" />
                                         PDF: {availableMaterials.find(m => m.id === selectedPdfId)?.title}
+                                    </li>
+                                )}
+                                {selectedQuizId && (
+                                    <li className="flex items-center gap-2">
+                                        <CheckCircle size={14} className="text-green-500" />
+                                        Quiz: {availableMaterials.find(m => m.id === selectedQuizId)?.title}
                                     </li>
                                 )}
                             </ul>
