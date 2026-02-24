@@ -24,6 +24,8 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
     const [videoType, setVideoType] = useState<'youtube' | 'upload'>(lesson.video?.type || 'youtube');
     const [videoUrl, setVideoUrl] = useState(lesson.video?.url || '');
     const [selectedMaterials, setSelectedMaterials] = useState(lesson.materials || []);
+    const [selectedPdfId, setSelectedPdfId] = useState<string>('');
+    const [selectedQuizId, setSelectedQuizId] = useState<string>('');
     const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
     // Reset form when lesson changes
@@ -33,8 +35,16 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             setVideoType(lesson.video?.type || 'youtube');
             setVideoUrl(lesson.video?.url || '');
             setSelectedMaterials(lesson.materials || []);
+
+            if (availableMaterials.length > 0) {
+                const initialPdfId = availableMaterials.find(m => m.url === lesson.pdf?.url)?.id || '';
+                setSelectedPdfId(initialPdfId);
+
+                const initialQuizId = lesson.quiz?.id || '';
+                setSelectedQuizId(initialQuizId);
+            }
         }
-    }, [lesson, isOpen]);
+    }, [lesson, isOpen, availableMaterials]);
 
     if (!isOpen) return null;
 
@@ -64,6 +74,24 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
             materials: selectedMaterials
         };
 
+        if (selectedPdfId) {
+            const pdfMaterial = availableMaterials.find(m => m.id === selectedPdfId);
+            if (pdfMaterial) {
+                lessonData.pdf = { title: pdfMaterial.title, url: pdfMaterial.url };
+            }
+        } else {
+            lessonData.pdf = null;
+        }
+
+        if (selectedQuizId) {
+            const quizMaterial = availableMaterials.find(m => m.id === selectedQuizId);
+            if (quizMaterial) {
+                lessonData.quiz = { id: quizMaterial.id, title: quizMaterial.title, url: quizMaterial.url };
+            }
+        } else {
+            lessonData.quiz = null;
+        }
+
         onSave(lesson.id, lessonData);
         onClose();
     };
@@ -91,8 +119,11 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
 
     // Filter out materials that are already selected
     const availableOptions = availableMaterials.filter(
-        m => !selectedMaterials.some(selected => selected.id === m.id)
+        m => !selectedMaterials.some(selected => selected.id === m.id) && m.type !== 'pdf' && m.type !== 'quiz'
     );
+
+    const pdfMaterials = availableMaterials.filter(m => m.type === 'pdf');
+    const quizMaterials = availableMaterials.filter(m => m.type === 'quiz');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -148,6 +179,40 @@ export const EditLessonModal: React.FC<EditLessonModalProps> = ({
                                 placeholder={videoType === 'youtube' ? 'https://youtube.com/watch?v=...' : 'https://example.com/video.mp4'}
                                 error={errors.videoUrl}
                             />
+                        </div>
+
+                        {/* PDF Selection */}
+                        <div className="space-y-2 pt-4 border-t border-gray-100">
+                            <label className="block text-sm font-medium text-gray-700">Lesson PDF (Optional)</label>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                                value={selectedPdfId}
+                                onChange={(e) => setSelectedPdfId(e.target.value)}
+                            >
+                                <option value="">-- None --</option>
+                                {pdfMaterials.map(m => (
+                                    <option key={m.id} value={m.id}>
+                                        📄 {m.title}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Quiz Selection */}
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700">Quiz (Optional)</label>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500"
+                                value={selectedQuizId}
+                                onChange={(e) => setSelectedQuizId(e.target.value)}
+                            >
+                                <option value="">-- None --</option>
+                                {quizMaterials.map(m => (
+                                    <option key={m.id} value={m.id}>
+                                        🧠 {m.title}
+                                    </option>
+                                ))}
+                            </select>
                         </div>
 
                         <div className="space-y-4 pt-4 border-t border-gray-100">

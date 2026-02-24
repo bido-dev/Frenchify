@@ -10,12 +10,12 @@ export interface LessonData {
     pdf?: {
         url: string;
         title: string;
-    };
+    } | null;
     quiz?: {
         id: string;
         title: string;
         url: string;
-    };
+    } | null;
     materials?: {
         id: string;
         title: string;
@@ -33,12 +33,12 @@ export interface LessonCreateData {
     pdf?: {
         url: string;
         title: string;
-    };
+    } | null;
     quiz?: {
         id: string;
         title: string;
         url: string;
-    };
+    } | null;
     materials?: {
         id: string;
         title: string;
