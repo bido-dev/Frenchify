@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import { onRequest } from "firebase-functions/v2/https";
 import express from "express";
 import cors from "cors";
 
@@ -24,4 +24,7 @@ app.use("/students", studentRoutes);
 app.use("/teachers", teacherRoutes);
 
 // Export the API to Firebase Cloud Functions
-export const api = functions.https.onRequest(app);
+export const api = onRequest({
+    memory: "1GiB",
+    timeoutSeconds: 120, // 2 minutes just in case Gemini API is slow
+}, app);
