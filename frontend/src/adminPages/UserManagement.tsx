@@ -153,7 +153,7 @@ export default function UserManagement() {
             key: 'tier',
             header: 'Tier',
             render: (item) => {
-                if (item.role === 'admin') return <span className="text-xs text-gray-400">-</span>;
+                if (item.role === 'admin' || item.role === 'teacher') return <span className="text-xs text-gray-400">-</span>;
                 const variant = item.tier === 'paid' ? 'pro' : 'free';
                 return <Badge variant={variant} text={item.tier.toUpperCase()} />;
             }
@@ -169,27 +169,27 @@ export default function UserManagement() {
             className: 'text-right',
             render: (item) => (
                 <div className="flex justify-end gap-2">
-                    {item.role !== 'admin' && (
-                        <>
-                            <ActionButton
-                                variant="neutral"
-                                onClick={() => handleToggleSubscription(item)}
-                                loading={processingId === item.uid}
-                                disabled={!!processingId}
-                                title={item.tier === 'free' ? "Upgrade to Paid" : "Downgrade to Free"}
-                                icon={<CreditCard size={14} className={item.tier === 'free' ? "text-amber-500" : "text-gray-400"} />}
-                            >
-                                {item.tier === 'free' ? 'Upgrade' : 'Downgrade'}
-                            </ActionButton>
+                    {item.role === 'student' && (
+                        <ActionButton
+                            variant="neutral"
+                            onClick={() => handleToggleSubscription(item)}
+                            loading={processingId === item.uid}
+                            disabled={!!processingId}
+                            title={item.tier === 'free' ? "Upgrade to Paid" : "Downgrade to Free"}
+                            icon={<CreditCard size={14} className={item.tier === 'free' ? "text-amber-500" : "text-gray-400"} />}
+                        >
+                            {item.tier === 'free' ? 'Upgrade' : 'Downgrade'}
+                        </ActionButton>
+                    )}
 
-                            <ActionButton
-                                variant="delete"
-                                onClick={() => openDeleteModal(item)}
-                                disabled={!!processingId}
-                                title="Delete User"
-                                icon={<Trash2 size={14} />}
-                            />
-                        </>
+                    {item.role !== 'admin' && (
+                        <ActionButton
+                            variant="delete"
+                            onClick={() => openDeleteModal(item)}
+                            disabled={!!processingId}
+                            title="Delete User"
+                            icon={<Trash2 size={14} />}
+                        />
                     )}
                 </div>
             )

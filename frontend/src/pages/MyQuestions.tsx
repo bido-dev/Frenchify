@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { getMyQuestions, type Question } from '../api/student.api';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { CheckCircle, Clock } from 'lucide-react';

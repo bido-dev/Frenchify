@@ -432,14 +432,26 @@ export const CourseEditor: React.FC = () => {
                                                 <p className="text-xs text-gray-500 capitalize">{material.type}</p>
                                             </div>
                                         </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 h-8 w-8 p-0"
-                                            onClick={() => setDeletingMaterial(material)}
-                                        >
-                                            <Trash2 size={14} />
-                                        </Button>
+                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            {material.type === 'quiz' && (
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="text-blue-500 hover:text-blue-700 h-8 w-8 p-0"
+                                                    onClick={() => navigate(`/teacher/course/${savedCourseId}/quiz/${material.id}/edit`)}
+                                                >
+                                                    <Edit2 size={14} />
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                                                onClick={() => setDeletingMaterial(material)}
+                                            >
+                                                <Trash2 size={14} />
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

@@ -1,18 +1,67 @@
-rules_version='2'
+rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      // This rule allows anyone with your database reference to view, edit,
-      // and delete all data in your database. It is useful for getting
-      // started, but it is configured to expire after 30 days because it
-      // leaves your app open to attackers. At that time, all client
-      // requests to your database will be denied.
-      //
-      // Make sure to write security rules for your app before that time, or
-      // else all client requests to your database will be denied until you
-      // update your rules.
-      allow read, write: if request.time < timestamp.date(2026, 3, 4);
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Users collection
+    match /users/{uid} {
+      // Users can read their own doc; admins can read any user doc
+      allow read: if isOwner(uid) || isAdmin();
+
+      // Admins can list all users (needed for usePendingTeachers, UserManagement, etc.)
+      allow list: if isAdmin();
+
+      // Users can write their own doc; admins can write any user doc
+      allow write: if isOwner(uid) || isAdmin();
+    }
+
+    // Courses + sub-collections
+    match /courses/{courseId} {
+      // Anyone can browse published courses; authenticated users see all
+      allow read: if true;
+
+      // Only the owning teacher or an admin can create/update/delete
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+        (resource.data.teacherId == request.auth.uid || isAdmin());
+
+      match /materials/{materialId} {
+        allow read: if true;
+        allow write: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/courses/$(courseId)).data.teacherId == request.auth.uid || isAdmin());
+      }
+
+      match /questions/{questionId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated();
+        allow update, delete: if isAuthenticated() &&
+          (resource.data.userId == request.auth.uid || isAdmin());
+      }
+
+      match /lessons/{lessonId} {
+        allow read: if true;
+        allow write: if isAuthenticated() &&
+          (get(/databases/$(database)/documents/courses/$(courseId)).data.teacherId == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Enrollments
+    match /enrollments/{enrollmentId} {
+      allow read, write: if isAuthenticated();
     }
   }
 }

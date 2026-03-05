@@ -1,0 +1,237 @@
+# Test Plan: Frenchify LMS (v1.5)
+
+| Field           | Value                                                                  |
+|-----------------|------------------------------------------------------------------------|
+| **Project**     | Frenchify – French E-Learning LMS                                      |
+| **Version**     | 1.0                                                                    |
+| **Author**      | QA Lead                                                                |
+| **Date**        | 2026-03-05                                                             |
+| **Scope**       | Functional, UI/UX, Security, Integration, Performance & Regression     |
+| **Environments**| Chrome & Firefox (Desktop + Mobile), Firebase Emulator Suite            |
+| **Strategy**    | Manual exploratory + scripted test cases; unit tests for Cloud Functions|
+
+---
+
+## 1. Test Objectives
+
+1. Validate that the **Freemium (Netflix-style)** subscription model correctly gates content.
+2. Verify all **CRUD** operations for Courses, Materials, Lessons, and Q&A.
+3. Confirm **Firestore Security Rules** prevent unauthorized reads/writes.
+4. Ensure **Admin gatekeeping** (teacher approval, user management, subscription override) works end-to-end.
+5. Validate **UI/UX** adherence to the Frenchify Design System (colors, typography, responsiveness).
+6. Confirm **media** workflows: YouTube embedding, file uploads (audio/video/PDF).
+
+---
+
+## 2. Entry & Exit Criteria
+
+### Entry Criteria
+- Build compiles without errors (`npm run build` passes).
+- Firebase Emulator Suite starts successfully.
+- Test user accounts exist: Free Student, Paid Student, Approved Teacher, Unapproved Teacher, Admin.
+
+### Exit Criteria
+- All **Critical** and **High** severity test cases pass.
+- No open **Blocker** or **Critical** defects.
+- Security test cases (SEC-*) all pass.
+- UI spot-checks on mobile (375 px) and desktop (1440 px) pass.
+
+---
+
+## 3. Test Environment & Data
+
+| Role               | Email (example)         | Tier / Status     |
+|---------------------|-------------------------|-------------------|
+| Free Student        | free@test.com           | tier: "free"      |
+| Paid Student        | paid@test.com           | tier: "paid"      |
+| Approved Teacher    | teacher@test.com        | status: "approved" |
+| Unapproved Teacher  | pending@test.com        | status: "pending"  |
+| Admin               | admin@test.com          | role: "admin"      |
+
+### Pre-requisites
+- At least **2 courses**: one Free, one Paid (with materials of every type).
+- At least **1 Q&A thread** with an unanswered question.
+
+---
+
+## 4. Test Cases
+
+### 4.1 Authentication & Onboarding
+
+| ID      | Title                          | Priority | Pre-condition          | Steps | Expected Result |
+|---------|--------------------------------|----------|------------------------|-------|-----------------|
+| AUTH-01 | Student Signup – Default Tier  | Critical | None                   | 1. Navigate to `/register`. 2. Register with email/password, role = student. 3. Query Firestore `users` collection. | Document created with `role: "student"`, `tier: "free"`, `createdAt` populated. |
+| AUTH-02 | Teacher Signup – Pending State | Critical | None                   | 1. Register as Teacher. 2. Log in. 3. Attempt to click "Publish" on any draft course. | Login succeeds. "Publish" button is **disabled/hidden**. Teacher status = `"pending"`. |
+| AUTH-03 | Unified Login Form             | High     | Free & Paid accounts exist | 1. Log in with Free student credentials. 2. Log out. 3. Log in with Paid student credentials. | Same login form used. Both logins succeed. Dashboard shows correct tier badge. |
+| AUTH-04 | Invalid Credentials            | High     | None                   | 1. Enter wrong password. 2. Enter non-existent email. | Appropriate error message displayed; no crash. |
+| AUTH-05 | Session Persistence            | Medium   | Logged-in user         | 1. Log in. 2. Close browser tab. 3. Reopen app. | User remains authenticated (Firebase persistence). |
+| AUTH-06 | Logout                         | High     | Logged-in user         | 1. Click profile avatar. 2. Click "Logout". | Redirected to login/landing page. Protected routes inaccessible. |
+
+---
+
+### 4.2 Student Features (Freemium Logic)
+
+| ID      | Title                            | Priority | Pre-condition            | Steps | Expected Result |
+|---------|----------------------------------|----------|--------------------------|-------|-----------------|
+| STU-01  | Free – Access Free Content       | Critical | Free student logged in   | 1. Open a course marked Free. 2. Click a material with `isFreePreview = true`. | Content loads and plays correctly. |
+| STU-02  | Free – Blocked from Paid Content | Critical | Free student logged in   | 1. Browse catalog. 2. Click a Paid course card. | Card shows **Lock icon** + grayscale thumbnail. Click opens the **Upgrade Modal**. |
+| STU-03  | Paid – Global Access (Netflix)   | Critical | Paid student logged in   | 1. Click any Paid course. 2. Open any material inside. | Immediate access; no lock icon; content plays. |
+| STU-04  | Paid – Download Materials        | High     | Paid student, PDF material exists | 1. Open a PDF material. 2. Click "Download". | File downloads to device. |
+| STU-05  | Free – Download Hidden           | High     | Free student logged in   | 1. Open the same PDF material. | Download button is **hidden or disabled**. |
+| STU-06  | Paid – Post Question (Q&A)      | High     | Paid student, inside a course lesson | 1. Scroll to Q&A section. 2. Type and submit a question. | Question appears in list. Stored in `courses/{id}/questions`. |
+| STU-07  | Free – Q&A Input Hidden          | High     | Free student logged in   | 1. Navigate to same lesson. | "Post Question" input is **hidden or disabled**. |
+| STU-08  | Upgrade Modal – Display          | High     | Free student logged in   | 1. Click locked course. | Modal shows benefits list, pricing, and "Subscribe via Stripe" button. |
+| STU-09  | Catalog Filters                  | Medium   | Student logged in        | 1. Click "All". 2. Click "Grammar". 3. Click "Conversation". | Catalog filters correctly by category. |
+| STU-10  | Course Player – YouTube          | High     | Student with access      | 1. Open a Grammar lesson with YouTube type. | Embedded YouTube player renders and plays. No file-player fallback. |
+| STU-11  | Course Player – Audio            | High     | Student with access      | 1. Open a Conversation lesson with uploaded audio. | Audio player loads and plays the recording. |
+| STU-12  | Quiz – Self-Check                | Medium   | Student with access      | 1. Open a Quiz material. 2. Answer questions. 3. Submit. | Results shown client-side. **No data written to Firestore** (verify via console). |
+
+---
+
+### 4.3 Teacher Features (Content Management)
+
+| ID      | Title                              | Priority | Pre-condition              | Steps | Expected Result |
+|---------|------------------------------------|----------|----------------------------|-------|-----------------|
+| TCH-01  | Create Course (Draft)              | Critical | Approved teacher logged in | 1. Click "Create Course". 2. Fill Title, Description. 3. Save. | Course created with `status: "draft"` in Firestore. |
+| TCH-02  | Publish Course (Approved Teacher)  | Critical | Approved teacher, draft exists | 1. Click "Publish" on draft course. | Status updates to `"published"`. Course visible in Student Catalog. |
+| TCH-03  | Publish Blocked (Unapproved)       | Critical | Unapproved teacher logged in | 1. Create a draft course. 2. Look for "Publish" button. | Button is **disabled or hidden**. |
+| TCH-04  | Embed YouTube Video                | High     | Approved teacher, in Course Editor | 1. Add Material → select "YouTube". 2. Paste valid YouTube URL. 3. Save. | Video ID extracted. Student view renders YouTube player. |
+| TCH-05  | Upload Audio/Video File            | High     | Approved teacher           | 1. Add Material → select "Video". 2. Upload an MP3/MP4. 3. Save. | File uploaded to Firebase Storage. Download URL saved in Firestore. |
+| TCH-06  | Upload PDF                         | High     | Approved teacher           | 1. Add Material → select "PDF". 2. Upload a PDF. 3. Save. | PDF accessible to students. |
+| TCH-07  | Create Quiz                        | High     | Approved teacher           | 1. Add Material → select "Quiz". 2. Add 3+ MCQ questions. 3. Save. | Quiz saved. **No grades/results table** created in DB. |
+| TCH-08  | Edit Course Info                   | Medium   | Teacher owns the course    | 1. Edit title, description, isPaid toggle. 2. Save. | Changes reflected immediately. `updatedAt` updated. |
+| TCH-09  | Delete Course                      | High     | Teacher owns the course    | 1. Click "Delete" on a course. 2. Confirm. | Course and all sub-collections removed. Not visible in catalog. |
+| TCH-10  | Set Free Preview Flag              | High     | Teacher in material editor | 1. Check "Free Preview?" on a material. 2. Save. | `isFreePreview = true`. Free students can access this material. |
+| TCH-11  | Answer Student Question            | High     | Teacher, unanswered Q exists | 1. Go to Q&A tab. 2. Find question. 3. Type reply. 4. Submit. | `answerText` saved. `isAnswered = true`. Visible to student. |
+| TCH-12  | Invalid YouTube URL                | Medium   | Teacher in Add Material    | 1. Select YouTube type. 2. Paste an invalid URL. 3. Save. | Validation error displayed. Material **not** saved. |
+
+---
+
+### 4.4 Admin Features (Gatekeeping & Management)
+
+| ID      | Title                           | Priority | Pre-condition       | Steps | Expected Result |
+|---------|----------------------------------|----------|---------------------|-------|-----------------|
+| ADM-01  | Approve Pending Teacher          | Critical | Admin logged in, pending teacher exists | 1. Go to Teacher Approvals. 2. Click "Approve". | Teacher status → approved. "Publish" button now enabled for that teacher. |
+| ADM-02  | Reject Pending Teacher           | High     | Admin logged in      | 1. Click "Reject" on pending teacher. | Teacher status updated/removed. Cannot publish. |
+| ADM-03  | Override Subscription (Free→Paid)| High     | Admin logged in, free student exists | 1. Go to User Management. 2. Find student. 3. Click "Set to Paid". | Student `tier` → `"paid"`. Student gains immediate access to paid content. |
+| ADM-04  | Override Subscription (Paid→Free)| High     | Admin logged in, paid student exists | 1. Click "Set to Free" on a paid student. | Student `tier` → `"free"`. Content gated again on next access. |
+| ADM-05  | Delete Student                   | High     | Admin logged in      | 1. Find student. 2. Click "Delete User". 3. Confirm. | User removed from **Firebase Auth** AND `users` collection. |
+| ADM-06  | Delete Teacher                   | High     | Admin logged in      | 1. Find teacher. 2. Click "Delete User". 3. Confirm. | Teacher + their authored courses handled appropriately. |
+| ADM-07  | Create Another Admin             | High     | Admin logged in      | 1. Go to Create Admin page. 2. Fill form. 3. Submit. | New admin account created with `role: "admin"`. |
+| ADM-08  | Search Users                     | Medium   | Admin logged in      | 1. Type email in search bar. | Matching users displayed. Partial match supported. |
+
+---
+
+### 4.5 Security & Firestore Rules
+
+| ID      | Title                               | Priority | Pre-condition             | Steps | Expected Result |
+|---------|--------------------------------------|----------|---------------------------|-------|-----------------|
+| SEC-01  | Free Tier – Material Data Leak       | Critical | Free student logged in    | 1. Use browser DevTools / Firestore API to read a material where `isFreePreview = false`. | **Permission denied** (or data filtered by app logic). |
+| SEC-02  | Paid Tier – Material Read            | Critical | Paid student logged in    | 1. Read the same restricted material via API. | Read **allowed**. |
+| SEC-03  | Cross-Teacher Write Prevention       | Critical | Teacher A logged in       | 1. Attempt to update a course owned by Teacher B via REST/Console. | Firestore returns **permission-denied**. |
+| SEC-04  | Unauthenticated Course Write         | Critical | Not logged in             | 1. Try to create a course via API. | Request **rejected**. |
+| SEC-05  | Student Cannot Write Courses         | High     | Student logged in         | 1. Try to create/update a course via API. | **Permission denied** (create may succeed per current rules — flag for review). |
+| SEC-06  | Questions – Only Owner Can Delete    | High     | Student A logged in       | 1. Try to delete a question posted by Student B. | **Permission denied**. |
+| SEC-07  | Admin Can Manage Any User            | High     | Admin logged in           | 1. Read/write another user's document. | Allowed. |
+| SEC-08  | User Cannot Read Other User Docs     | High     | Student A logged in       | 1. Try to read Student B's user document. | **Permission denied**. |
+
+> **⚠ Note (SEC-05):** Current `firestore.rules` allows any authenticated user to `create` a course. This should be restricted to users with `role: "teacher"` or `role: "admin"`. **Flag as a potential defect.**
+
+---
+
+### 4.6 UI/UX & Design System Verification
+
+| ID      | Title                           | Priority | Steps | Expected Result |
+|---------|----------------------------------|----------|-------|-----------------|
+| UI-01   | Primary Button Color             | Medium   | Inspect "Login", "Save" buttons. | Background: Azure Blue `#2563EB`. |
+| UI-02   | Destructive Button Color         | Medium   | Inspect "Delete", "Reject" buttons. | Text: Marianne Red `#EF4444`. |
+| UI-03   | Pro Badge Color                  | Medium   | View Paid course card. | Badge uses Gold `#F59E0B`. |
+| UI-04   | Free Badge Color                 | Medium   | View Free course card. | Badge uses Emerald `#10B981`. |
+| UI-05   | Locked Course Card Styling       | High     | View catalog as Free student. | Paid courses show **grayscale** thumbnail + **lock icon** overlay. |
+| UI-06   | Font Family                      | Low      | Inspect body text. | Font: **Inter** (Google Font). |
+| UI-07   | Responsive – Mobile (375 px)     | High     | Resize browser to 375 px width. Navigate through dashboard, catalog, course player. | Grid collapses to single column. Navbar adapts (hamburger or stacked). No horizontal overflow. |
+| UI-08   | Responsive – Tablet (768 px)     | Medium   | Resize to 768 px. | Layout adjusts gracefully. 2-column grid for cards. |
+| UI-09   | Upgrade Modal Appearance         | Medium   | Trigger upgrade modal as Free student. | Contains benefits list, pricing info, and Stripe CTA button. |
+| UI-10   | Admin Table Styling              | Low      | Inspect admin data tables. | Container: `bg-white rounded-lg shadow`. Header row: `bg-gray-50`. Hover rows: `bg-gray-50` transition. |
+| UI-11   | Navigation – Student Navbar      | Medium   | Log in as student. | Left: Logo "Frenchify". Center: Grammar, Conversation links. Right: "Upgrade to Pro" (if Free), Profile Avatar. |
+| UI-12   | Empty States                     | Low      | View dashboard with no courses. | Meaningful empty state message (not blank screen). |
+
+---
+
+### 4.7 Integration & Edge Cases
+
+| ID      | Title                                 | Priority | Steps | Expected Result |
+|---------|----------------------------------------|----------|-------|-----------------|
+| INT-01  | End-to-End: Teacher Publishes → Student Sees | Critical | 1. Teacher creates & publishes a course. 2. Student refreshes catalog. | Course appears in student catalog immediately. |
+| INT-02  | End-to-End: Admin Approves → Teacher Publishes | Critical | 1. Admin approves pending teacher. 2. Teacher logs in. 3. Teacher publishes draft. | Publish button enabled. Course goes live. |
+| INT-03  | End-to-End: Q&A Flow                  | High     | 1. Paid student posts question. 2. Teacher sees it in Q&A tab. 3. Teacher replies. 4. Student sees answer. | Full round-trip works. |
+| INT-04  | Tier Upgrade Mid-Session               | High     | 1. Log in as Free. 2. Admin changes tier to Paid. 3. Refresh page. | Locked content becomes accessible without re-login (or after token refresh). |
+| INT-05  | Delete Course with Materials           | Medium   | 1. Teacher deletes a course that has materials + questions. | All sub-collections cleaned up. No orphaned data. |
+| INT-06  | Concurrent Edits                       | Low      | 1. Two browser tabs edit the same course. 2. Both save. | Last write wins. No crash or data corruption. |
+| INT-07  | Large File Upload                      | Medium   | 1. Teacher uploads a 500 MB video. | Upload completes (or shows meaningful size limit error). Progress indicator visible. |
+| INT-08  | Special Characters in Course Title     | Low      | 1. Create course with title: `L'été à Paris — Règles & "Grammaire"`. | Title saved and displayed correctly. No encoding issues. |
+
+---
+
+### 4.8 Performance (Smoke-Level)
+
+| ID      | Title                        | Priority | Steps | Expected Result |
+|---------|-------------------------------|----------|-------|-----------------|
+| PERF-01 | Dashboard Load Time           | Medium   | 1. Log in. 2. Measure time to interactive. | Dashboard loads in **< 3 seconds** on desktop broadband. |
+| PERF-02 | Catalog with 50+ Courses      | Medium   | 1. Seed 50 courses. 2. Load catalog. | Page renders without freezing. Pagination or lazy loading works. |
+| PERF-03 | YouTube Player Load            | Low      | 1. Open a YouTube material. | Player initializes in **< 2 seconds**. |
+
+---
+
+## 5. Defect Severity Definitions
+
+| Severity    | Definition                                                         |
+|-------------|--------------------------------------------------------------------|
+| **Blocker** | System crash, data loss, or security breach. No workaround.        |
+| **Critical**| Core feature broken (login, payment gating, content access).       |
+| **Major**   | Feature works but with significant issues (broken layout, missing validation). |
+| **Minor**   | Cosmetic issues, typos, minor UX inconveniences.                   |
+
+---
+
+## 6. Risks & Assumptions
+
+| Risk                                         | Mitigation                                               |
+|----------------------------------------------|----------------------------------------------------------|
+| Firestore rules allow any auth user to create courses (SEC-05) | Flag for development fix; restrict to teacher/admin roles |
+| Stripe integration not yet implemented       | Payment tests deferred to Phase 3                        |
+| Simultaneous login detection not finalized   | AUTH-04 marked as conditional based on implementation    |
+| No automated E2E test suite yet              | Manual regression for MVP; recommend Cypress post-launch |
+
+---
+
+## 7. Traceability Matrix
+
+| PRD Section               | Test Case IDs                                    |
+|---------------------------|--------------------------------------------------|
+| 3.1 Auth & Onboarding     | AUTH-01 → AUTH-06                                |
+| 3.2 Student Features      | STU-01 → STU-12                                  |
+| 3.3 Teacher Features      | TCH-01 → TCH-12                                  |
+| 3.4 Admin Features        | ADM-01 → ADM-08                                  |
+| 6. Security Rules          | SEC-01 → SEC-08                                  |
+| 11. UI/UX Design System   | UI-01 → UI-12                                    |
+| Cross-cutting Integration | INT-01 → INT-08                                  |
+| Performance                | PERF-01 → PERF-03                                |
+
+---
+
+**Total Test Cases: 67**
+| Category        | Count |
+|-----------------|-------|
+| Authentication  | 6     |
+| Student         | 12    |
+| Teacher         | 12    |
+| Admin           | 8     |
+| Security        | 8     |
+| UI/UX           | 12    |
+| Integration     | 8     |
+| Performance     | 3     |
+
+---
+
+*End of Test Plan*

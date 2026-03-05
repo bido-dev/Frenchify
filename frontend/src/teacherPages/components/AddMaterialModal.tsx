@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/Button';
 import { Input } from '../../components/Input';
-import { X, Upload, FileText, CheckCircle, AlertCircle, Video, Sparkles, Loader2 } from 'lucide-react';
+import { X, Upload, FileText, CheckCircle, AlertCircle, Video, Sparkles, Loader2, PenLine } from 'lucide-react';
 import { storage, auth } from '../../config/firebase';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { generateQuiz, getCourseMaterials, type QuizQuestion, type QuestionType, type QuizLanguage, type QuizDifficulty, type MaterialData } from '../../api/course.api';
@@ -13,9 +14,10 @@ interface AddMaterialModalProps {
     courseId: string;
 }
 
-type MaterialType = 'video' | 'quiz' | 'pdf';
+type MaterialType = 'video' | 'quiz' | 'manual_quiz' | 'pdf';
 
 export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onClose, onSave, courseId }) => {
+    const navigate = useNavigate();
     const [type, setType] = useState<MaterialType>('video');
     const [title, setTitle] = useState('');
     const [content, setContent] = useState(''); // URL for YouTube
@@ -291,11 +293,11 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                         </div>
                     ) : (
                         /* ====== MAIN FORM ====== */
-                        <form onSubmit={type !== 'quiz' ? handleSubmit : (e) => { e.preventDefault(); handleGenerateQuiz(); }} className="p-6 space-y-6">
+                        <form onSubmit={type === 'quiz' ? (e) => { e.preventDefault(); handleGenerateQuiz(); } : type === 'manual_quiz' ? (e) => { e.preventDefault(); handleClose(); navigate(`/teacher/course/${courseId}/quiz/new`); } : handleSubmit} className="p-6 space-y-6">
                             {/* Material Type Selector */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-3">Material Type</label>
-                                <div className="grid grid-cols-3 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                     <button
                                         type="button"
                                         onClick={() => setType('video')}
@@ -320,17 +322,36 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                                         <Sparkles className="mb-2 w-5 h-5" />
                                         <span className="text-[10px] font-medium uppercase">AI Quiz</span>
                                     </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setType('manual_quiz')}
+                                        className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${type === 'manual_quiz' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 hover:bg-gray-50'}`}
+                                    >
+                                        <PenLine className="mb-2 w-5 h-5" />
+                                        <span className="text-[10px] font-medium uppercase">Manual Quiz</span>
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Title */}
-                            <Input
-                                label={type === 'quiz' ? 'Quiz Title' : 'Lesson Title'}
-                                value={title}
-                                onChange={e => setTitle(e.target.value)}
-                                placeholder={type === 'quiz' ? 'e.g., Chapter 3 Review Quiz' : 'e.g., Introduction to Verbs'}
-                                required
-                            />
+                            {/* Title (hide for manual quiz since the editor page has its own) */}
+                            {type !== 'manual_quiz' && (
+                                <Input
+                                    label={type === 'quiz' ? 'Quiz Title' : 'Lesson Title'}
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder={type === 'quiz' ? 'e.g., Chapter 3 Review Quiz' : 'e.g., Introduction to Verbs'}
+                                    required
+                                />
+                            )}
+
+                            {/* Manual Quiz Info */}
+                            {type === 'manual_quiz' && (
+                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-center space-y-2">
+                                    <PenLine className="mx-auto h-8 w-8 text-indigo-500" />
+                                    <p className="text-sm font-medium text-indigo-800">Manual Quiz Builder</p>
+                                    <p className="text-xs text-indigo-600">You'll be taken to a dedicated page where you can create questions, set answers, and configure your quiz.</p>
+                                </div>
+                            )}
 
                             {/* Video / PDF Upload */}
                             {(type === 'video' || type === 'pdf') && (
@@ -533,20 +554,22 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                                 </div>
                             )}
 
-                            {/* Free Preview Toggle */}
-                            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                <input
-                                    type="checkbox"
-                                    id="free-preview"
-                                    checked={isFree}
-                                    onChange={e => setIsFree(e.target.checked)}
-                                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                />
-                                <label htmlFor="free-preview" className="text-sm font-medium text-gray-700">
-                                    Enable Free Preview
-                                    <p className="text-xs text-gray-500 font-normal">Allow free tier users to access this material</p>
-                                </label>
-                            </div>
+                            {/* Free Preview Toggle (hide for manual quiz) */}
+                            {type !== 'manual_quiz' && (
+                                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                    <input
+                                        type="checkbox"
+                                        id="free-preview"
+                                        checked={isFree}
+                                        onChange={e => setIsFree(e.target.checked)}
+                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <label htmlFor="free-preview" className="text-sm font-medium text-gray-700">
+                                        Enable Free Preview
+                                        <p className="text-xs text-gray-500 font-normal">Allow free tier users to access this material</p>
+                                    </label>
+                                </div>
+                            )}
 
                             {/* Error */}
                             {error && (
@@ -566,6 +589,14 @@ export const AddMaterialModal: React.FC<AddMaterialModalProps> = ({ isOpen, onCl
                                     >
                                         <Sparkles className="w-4 h-4 mr-2" />
                                         Generate Quiz
+                                    </Button>
+                                ) : type === 'manual_quiz' ? (
+                                    <Button
+                                        type="submit"
+                                        className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white border-transparent"
+                                    >
+                                        <PenLine className="w-4 h-4 mr-2" />
+                                        Go to Quiz Builder
                                     </Button>
                                 ) : (
                                     <Button type="submit" isLoading={uploading}>

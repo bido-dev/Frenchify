@@ -17,6 +17,7 @@ const Profile = lazy(() => import('./pages/Profile'));
 const StudentMyQuestions = lazy(() => import('./pages/MyQuestions'));
 const TeacherDashboard = lazy(() => import('./teacherPages/TeacherDashboard'));
 const CourseEditor = lazy(() => import('./teacherPages/CourseEditor'));
+const QuizEditor = lazy(() => import('./teacherPages/QuizEditor'));
 const MyQuestions = lazy(() => import('./teacherPages/MyQuestions'));
 const PendingApproval = lazy(() => import('./teacherPages/PendingApproval'));
 
@@ -50,6 +51,8 @@ function App() {
               <Route path="/teacher/questions" element={<PrivateRoute requiredRole="teacher"><Layout><MyQuestions /></Layout></PrivateRoute>} />
               <Route path="/teacher/course/:courseId/edit" element={<PrivateRoute requiredRole="teacher"><Layout><CourseEditor /></Layout></PrivateRoute>} />
               <Route path="/teacher/course/new" element={<PrivateRoute requiredRole="teacher"><Layout><CourseEditor /></Layout></PrivateRoute>} />
+              <Route path="/teacher/course/:courseId/quiz/new" element={<PrivateRoute requiredRole="teacher"><Layout><QuizEditor /></Layout></PrivateRoute>} />
+              <Route path="/teacher/course/:courseId/quiz/:materialId/edit" element={<PrivateRoute requiredRole="teacher"><Layout><QuizEditor /></Layout></PrivateRoute>} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<PrivateRoute requiredRole="admin"><AdminLayout /></PrivateRoute>}>

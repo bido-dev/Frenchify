@@ -222,8 +222,15 @@ export const updateMaterialHandler = async (req: Request, res: Response) => {
             return;
         }
 
+        // Filter out undefined fields — Firestore .update() rejects undefined values
+        const updates: Record<string, any> = {};
+        if (title !== undefined) updates.title = title;
+        if (type !== undefined) updates.type = type;
+        if (url !== undefined) updates.url = url;
+        if (isFreePreview !== undefined) updates.isFreePreview = isFreePreview;
+
         // Use model layer for database operation
-        await updateMaterial(courseId, materialId, { title, type, url, isFreePreview });
+        await updateMaterial(courseId, materialId, updates);
 
         res.status(200).send({ message: "Material updated successfully" });
     } catch (error) {

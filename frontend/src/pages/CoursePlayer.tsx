@@ -34,8 +34,20 @@ export const CoursePlayer: React.FC = () => {
                 ]);
                 setCourse(courseData);
 
-                // Resources (PDFs/Extra materials)
-                const resourceItems = materialsData.filter(m => m.type === 'pdf' || m.type === 'quiz');
+                // Extract used URLs to avoid showing lesson specific resources globally
+                const usedUrls = new Set<string>();
+                lessonsData.forEach((lesson: any) => {
+                    if (lesson.pdf?.url) usedUrls.add(lesson.pdf.url);
+                    if (lesson.quiz?.url) usedUrls.add(lesson.quiz.url);
+                    if (lesson.materials) {
+                        lesson.materials.forEach((m: any) => usedUrls.add(m.url));
+                    }
+                });
+
+                // Global course resources (PDFs/Quizzes that are not attached to any specific lesson)
+                const resourceItems = materialsData.filter(m =>
+                    (m.type === 'pdf' || m.type === 'quiz') && !usedUrls.has(m.url)
+                );
                 setResources(resourceItems);
 
                 // Lessons (from distinct Lesson API)
@@ -72,9 +84,13 @@ export const CoursePlayer: React.FC = () => {
             setQuestionText('');
             setIsAsking(false);
             alert("Your question has been posted successfully and will be reviewed by a teacher.");
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error posting question:", error);
-            alert("Failed to post your question. Please try again.");
+            if (error?.response?.status === 403) {
+                alert("Upgrade to Paid Tier required to ask questions.");
+            } else {
+                alert("Failed to post your question. Please try again.");
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -221,23 +237,25 @@ export const CoursePlayer: React.FC = () => {
                             ) : null}
 
                             {/* Lesson Specific Materials */}
-                            {selectedLesson?.materials && selectedLesson.materials.map(material => (
-                                <Button
-                                    key={material.id}
-                                    variant="ghost"
-                                    className={`
+                            {selectedLesson?.materials && selectedLesson.materials
+                                .filter(m => m.url !== selectedLesson.pdf?.url && m.url !== selectedLesson.quiz?.url)
+                                .map(material => (
+                                    <Button
+                                        key={material.id}
+                                        variant="ghost"
+                                        className={`
                                         ${material.type === 'pdf' ? 'text-green-600 bg-green-50 hover:bg-green-100' :
-                                            material.type === 'youtube' ? 'text-red-600 bg-red-50 hover:bg-red-100' :
-                                                'text-blue-600 bg-blue-50 hover:bg-blue-100'}
+                                                material.type === 'youtube' ? 'text-red-600 bg-red-50 hover:bg-red-100' :
+                                                    'text-blue-600 bg-blue-50 hover:bg-blue-100'}
                                     `}
-                                    onClick={() => handleDownload(material.url)}
-                                >
-                                    {material.type === 'pdf' ? <FileText className="w-4 h-4 mr-2" /> :
-                                        material.type === 'youtube' ? <Video className="w-4 h-4 mr-2" /> :
-                                            <Download className="w-4 h-4 mr-2" />}
-                                    {material.title}
-                                </Button>
-                            ))}
+                                        onClick={() => handleDownload(material.url)}
+                                    >
+                                        {material.type === 'pdf' ? <FileText className="w-4 h-4 mr-2" /> :
+                                            material.type === 'youtube' ? <Video className="w-4 h-4 mr-2" /> :
+                                                <Download className="w-4 h-4 mr-2" />}
+                                        {material.title}
+                                    </Button>
+                                ))}
 
                             {/* Legacy PDF Support */}
                             {selectedLesson?.pdf ? (

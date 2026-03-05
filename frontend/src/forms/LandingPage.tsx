@@ -2,6 +2,7 @@ import React from 'react'; // Ensure React is imported for JSX
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { BookOpen, MessageCircle, Award, Star, Check } from 'lucide-react';
+import { InteractiveBook } from '../components/InteractiveBook';
 
 export const LandingPage: React.FC = () => {
     return (
@@ -195,6 +196,25 @@ export const LandingPage: React.FC = () => {
                             </p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            {/* Interactive Book Section */}
+            <div className="py-24 bg-white relative overflow-hidden border-b border-gray-100">
+                <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-blue-50 rounded-full blur-[100px] opacity-60 -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+                <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-50 rounded-full blur-[100px] opacity-60 translate-y-1/3 -translate-x-1/3 pointer-events-none"></div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="text-center max-w-3xl mx-auto md:mb-8">
+                        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-sm font-semibold mb-6">
+                            <BookOpen size={16} />
+                            <span>Interactive Guide</span>
+                        </div>
+                        <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-6 font-serif tracking-tight">A Journey Through France</h2>
+                        <p className="text-lg text-gray-600">Flip through the pages of our interactive guidebook and discover the beauty, culture, and language waiting for you.</p>
+                    </div>
+
+                    <InteractiveBook />
                 </div>
             </div>
 
