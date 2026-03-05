@@ -860,6 +860,7 @@ functions/src/
   category: "grammar" | "conversation";
   isPaid: boolean;
   status: "draft" | "published";
+  thumbnailUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
