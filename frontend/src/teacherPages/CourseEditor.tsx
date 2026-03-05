@@ -1,12 +1,14 @@
-import { Link, useParams, useNavigate } from 'react-router-dom';
+﻿import { Link, useParams, useNavigate } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AddLessonModal } from './components/AddLessonModal';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import Toast from '../components/Toast';
 import Modal from '../components/Modal';
-import { ArrowLeft, Save, Video, Youtube, FileText, Trash2, AlertCircle, BookOpen, Edit2 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { ArrowLeft, Save, Video, Youtube, FileText, Trash2, AlertCircle, BookOpen, Edit2, Upload } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { storage } from '../config/firebase';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import {
     createCourse,
     getCourse,
@@ -61,7 +63,11 @@ export const CourseEditor: React.FC = () => {
         isPaid: false,
         category: 'grammar' as 'grammar' | 'conversation',
         status: 'draft' as 'draft' | 'published',
+        thumbnailUrl: '' as string,
     });
+
+    const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [lessons, setLessons] = useState<LessonData[]>([]);
     const [materials, setMaterials] = useState<MaterialData[]>([]);
@@ -84,6 +90,7 @@ export const CourseEditor: React.FC = () => {
                         isPaid: courseData.isPaid,
                         category: courseData.category,
                         status: courseData.status,
+                        thumbnailUrl: courseData.thumbnailUrl || '',
                     });
                     setLessons(lessonsData);
                     setMaterials(materialsData);
@@ -113,6 +120,7 @@ export const CourseEditor: React.FC = () => {
                     description: course.description,
                     category: course.category,
                     isPaid: course.isPaid,
+                    thumbnailUrl: course.thumbnailUrl,
                 });
                 setToast({ message: 'Course saved successfully.', variant: 'success' });
             } else {
@@ -122,6 +130,7 @@ export const CourseEditor: React.FC = () => {
                     description: course.description,
                     category: course.category,
                     isPaid: course.isPaid,
+                    thumbnailUrl: course.thumbnailUrl,
                 });
                 setSavedCourseId(result.id);
                 // Update the URL so refreshing loads the course
@@ -205,6 +214,81 @@ export const CourseEditor: React.FC = () => {
         }
     };
 
+    const handlePredefinedSelect = async (url: string) => {
+        if (!savedCourseId) {
+            setToast({ message: 'Save the course first before setting a thumbnail.', variant: 'error' });
+            return;
+        }
+
+        setUploadingThumbnail(true);
+        try {
+            await updateCourse(savedCourseId, {
+                title: course.title,
+                description: course.description,
+                category: course.category,
+                isPaid: course.isPaid,
+                thumbnailUrl: url,
+            });
+            setCourse(prev => ({ ...prev, thumbnailUrl: url }));
+            setToast({ message: 'Thumbnail updated successfully.', variant: 'success' });
+        } catch (err: any) {
+            setToast({ message: err.response?.data?.message || 'Failed to update thumbnail.', variant: 'error' });
+        } finally {
+            setUploadingThumbnail(false);
+        }
+    };
+
+    const handleThumbnailUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!savedCourseId) {
+            setToast({ message: 'Save the course first before uploading a thumbnail.', variant: 'error' });
+            return;
+        }
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) { // 5MB limit
+            setToast({ message: 'File too large. Maximum size is 5MB.', variant: 'error' });
+            return;
+        }
+
+        setUploadingThumbnail(true);
+        try {
+            const timestamp = Date.now();
+            const storageRef = ref(storage, `courses/thumbnails/${savedCourseId}/${timestamp}_${file.name}`);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            uploadTask.on(
+                'state_changed',
+                () => { }, // progress
+                (error) => {
+                    console.error('Upload failed:', error);
+                    setToast({ message: 'Failed to upload thumbnail.', variant: 'error' });
+                    setUploadingThumbnail(false);
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+                    await updateCourse(savedCourseId, {
+                        title: course.title,
+                        description: course.description,
+                        category: course.category,
+                        isPaid: course.isPaid,
+                        thumbnailUrl: downloadURL,
+                    });
+
+                    setCourse(prev => ({ ...prev, thumbnailUrl: downloadURL }));
+                    setToast({ message: 'Thumbnail uploaded successfully.', variant: 'success' });
+                    setUploadingThumbnail(false);
+                }
+            );
+        } catch (err: any) {
+            console.error('Error starting upload:', err);
+            setToast({ message: 'Failed to upload thumbnail.', variant: 'error' });
+            setUploadingThumbnail(false);
+        }
+    };
+
     const handleDeleteLesson = async () => {
         if (!savedCourseId || !deletingLesson) return;
 
@@ -261,27 +345,27 @@ export const CourseEditor: React.FC = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+        <div className="max-w-5xl mx-auto space-y-8 px-4 sm:px-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
                     <Link to="/teacher/dashboard">
-                        <Button variant="ghost" size="sm" className="pl-0 hover:bg-transparent">
+                        <Button variant="ghost" size="sm" className="pl-0 hover:bg-transparent flex-shrink-0">
                             <ArrowLeft className="w-5 h-5 mr-1" /> Back
                         </Button>
                     </Link>
-                    <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
                         {isNew && !savedCourseId ? 'New Course' : 'Edit Course'}
                     </h1>
                     {course.status === 'published' && (
-                        <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800">Published</span>
+                        <span className="px-2.5 py-0.5 text-xs font-medium rounded-full bg-emerald-100 text-emerald-800 flex-shrink-0">Published</span>
                     )}
                 </div>
-                <div className="flex gap-3">
-                    <Button variant="ghost" onClick={handleSaveDraft} isLoading={saving} disabled={publishing}>
+                <div className="flex gap-3 w-full sm:w-auto">
+                    <Button variant="ghost" onClick={handleSaveDraft} isLoading={saving} disabled={publishing} className="flex-1 sm:flex-initial">
                         Save Draft
                     </Button>
                     {course.status !== 'published' && (
-                        <Button onClick={handlePublish} isLoading={publishing} disabled={saving || !savedCourseId}>
+                        <Button onClick={handlePublish} isLoading={publishing} disabled={saving || !savedCourseId} className="flex-1 sm:flex-initial">
                             <Save className="w-4 h-4 mr-2" />
                             Publish Course
                         </Button>
@@ -340,13 +424,13 @@ export const CourseEditor: React.FC = () => {
                                 {lessons.map((lesson, index) => (
                                     <div key={lesson.id} className="p-4 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors group">
                                         <div className="flex items-center justify-between mb-2">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm">
+                                            <div className="flex items-center gap-3 min-w-0">
+                                                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-sm flex-shrink-0">
                                                     {index + 1}
                                                 </div>
-                                                <h4 className="font-medium text-gray-900">{lesson.title}</h4>
+                                                <h4 className="font-medium text-gray-900 truncate">{lesson.title}</h4>
                                             </div>
-                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -432,7 +516,7 @@ export const CourseEditor: React.FC = () => {
                                                 <p className="text-xs text-gray-500 capitalize">{material.type}</p>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <div className="flex items-center gap-1 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex-shrink-0">
                                             {material.type === 'quiz' && (
                                                 <Button
                                                     variant="ghost"
@@ -446,7 +530,7 @@ export const CourseEditor: React.FC = () => {
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 h-8 w-8 p-0"
+                                                className="text-red-500 hover:text-red-700 h-8 w-8 p-0"
                                                 onClick={() => setDeletingMaterial(material)}
                                             >
                                                 <Trash2 size={14} />
@@ -461,7 +545,7 @@ export const CourseEditor: React.FC = () => {
 
                 {/* Sidebar: Settings */}
                 <div className="space-y-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
                         <h3 className="font-bold text-gray-900 mb-4">Course Settings</h3>
 
                         <div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -470,39 +554,84 @@ export const CourseEditor: React.FC = () => {
                                 <p className="text-xs text-gray-500">Requires subscription</p>
                             </div>
                             <div
-                                className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors ${course.isPaid ? 'bg-blue-600' : 'bg-gray-200'}`}
+                                className={`w-12 h-6 rounded-full p-1 cursor-pointer transition-colors flex-shrink-0 ${course.isPaid ? 'bg-blue-600' : 'bg-gray-200'}`}
                                 onClick={() => setCourse({ ...course, isPaid: !course.isPaid })}
                             >
                                 <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${course.isPaid ? 'translate-x-6' : 'translate-x-0'}`}></div>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 py-3 border-b border-gray-100">
                             <div>
                                 <p className="font-medium text-gray-900">Category</p>
                                 <p className="text-xs text-gray-500">Course type</p>
                             </div>
-                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                            <div className="flex bg-gray-100 p-1 rounded-lg w-full sm:w-auto">
                                 <button
                                     onClick={() => setCourse({ ...course, category: 'grammar' })}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${course.category === 'grammar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium rounded-md transition-all ${course.category === 'grammar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Grammar
                                 </button>
                                 <button
                                     onClick={() => setCourse({ ...course, category: 'conversation' })}
-                                    className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${course.category === 'conversation' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                    className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs font-medium rounded-md transition-all ${course.category === 'conversation' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                                 >
                                     Conversation
                                 </button>
                             </div>
                         </div>
 
-                        <div className="py-4">
-                            <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors">
-                                <div className="text-center">
-                                    <div className="mx-auto w-8 h-8 mb-2 text-gray-400">📷</div>
-                                    <span className="text-xs text-gray-500 font-medium">Upload Thumbnail</span>
+                        <div className="py-4 space-y-4">
+                            <div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleThumbnailUpload}
+                                />
+                                <div
+                                    className={`aspect-video bg-gray-100 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300 cursor-pointer hover:bg-gray-50 transition-colors relative overflow-hidden ${uploadingThumbnail ? 'opacity-50 pointer-events-none' : ''}`}
+                                    onClick={() => fileInputRef.current?.click()}
+                                >
+                                    {uploadingThumbnail ? (
+                                        <LoadingSpinner size="sm" text="Uploading..." />
+                                    ) : course.thumbnailUrl ? (
+                                        <>
+                                            <img src={course.thumbnailUrl} alt="Thumbnail" className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                                <div className="text-white text-center">
+                                                    <Upload className="mx-auto w-6 h-6 mb-1" />
+                                                    <span className="text-sm font-medium">Change Image</span>
+                                                </div>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="text-center p-4">
+                                            <div className="mx-auto w-8 h-8 mb-2 text-gray-400">ðŸ“·</div>
+                                            <span className="text-xs text-gray-500 font-medium">Upload Thumbnail</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-sm font-medium text-gray-700 mb-2">Or choose predefined:</p>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {[
+                                        { id: 'grammar', url: '/images/thumbnails/grammar.png' },
+                                        { id: 'conversation', url: '/images/thumbnails/conversation.png' },
+                                        { id: 'general', url: '/images/thumbnails/general.png' },
+                                    ].map((thumb) => (
+                                        <div
+                                            key={thumb.id}
+                                            className={`aspect-video rounded-md border-2 overflow-hidden cursor-pointer transition-all ${course.thumbnailUrl === thumb.url ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent hover:border-gray-300'}`}
+                                            onClick={() => handlePredefinedSelect(thumb.url)}
+                                        >
+                                            <img src={thumb.url} alt={`Predefined ${thumb.id}`} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </div>

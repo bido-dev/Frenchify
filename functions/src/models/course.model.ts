@@ -12,6 +12,7 @@ export interface CourseData {
     category: "grammar" | "conversation";
     isPaid: boolean;
     status: "draft" | "published";
+    thumbnailUrl?: string;
     createdAt: string;
     updatedAt: string;
 }
@@ -37,6 +38,7 @@ export const createCourse = async (
         description: string;
         category: "grammar" | "conversation";
         isPaid?: boolean;
+        thumbnailUrl?: string;
     }
 ): Promise<string> => {
     const newCourse = {
@@ -46,6 +48,7 @@ export const createCourse = async (
         category: courseData.category,
         isPaid: courseData.isPaid || false,
         status: "draft", // Always default to draft until published [PRD 8]
+        thumbnailUrl: courseData.thumbnailUrl || null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
     };
@@ -149,6 +152,7 @@ export const updateCourse = async (
         description?: string;
         category?: "grammar" | "conversation";
         isPaid?: boolean;
+        thumbnailUrl?: string;
     }
 ): Promise<void> => {
     await db.collection("courses").doc(courseId).update({

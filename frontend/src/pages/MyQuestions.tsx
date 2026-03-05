@@ -53,12 +53,12 @@ export default function MyQuestions() {
                                         </span>
                                     </div>
                                 </div>
-                                <p className="text-gray-900 font-medium whitespace-pre-wrap mb-4">{q.content}</p>
+                                <p className="text-gray-900 font-medium whitespace-pre-wrap break-words mb-4">{q.content}</p>
 
                                 {q.isAnswered && q.answerText && (
                                     <div className="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
                                         <p className="text-sm font-bold text-gray-700 mb-2">Teacher's Answer:</p>
-                                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap">{q.answerText}</p>
+                                        <p className="text-gray-600 leading-relaxed whitespace-pre-wrap break-words">{q.answerText}</p>
                                         {q.answeredAt && (
                                             <p className="text-xs text-gray-400 mt-3 pt-2 border-t border-gray-200">
                                                 Answered on {new Date(q.answeredAt).toLocaleDateString()}

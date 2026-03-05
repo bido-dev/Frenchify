@@ -55,7 +55,7 @@ export const getCourseMaterialsHandler = async (req: Request, res: Response) => 
 // 1. Create a New Course (Draft Mode) [PRD 3.3]
 export const createCourseHandler = async (req: Request, res: Response) => {
     try {
-        const { title, description, category, isPaid } = req.body;
+        const { title, description, category, isPaid, thumbnailUrl } = req.body;
         const uid = req.user?.uid;
 
         if (!uid) {
@@ -68,7 +68,8 @@ export const createCourseHandler = async (req: Request, res: Response) => {
             title,
             description,
             category,
-            isPaid
+            isPaid,
+            thumbnailUrl
         });
 
         res.status(201).send({ id: courseId, message: "Course created successfully" });
@@ -144,7 +145,7 @@ export const publishCourse = async (req: Request, res: Response) => {
 export const updateCourseHandler = async (req: Request, res: Response) => {
     try {
         const { courseId } = req.params as { courseId: string };
-        const { title, description, category, isPaid } = req.body;
+        const { title, description, category, isPaid, thumbnailUrl } = req.body;
         const uid = req.user?.uid;
 
         if (!uid) {
@@ -162,7 +163,7 @@ export const updateCourseHandler = async (req: Request, res: Response) => {
         }
 
         // Use model layer for database operation
-        await updateCourse(courseId, { title, description, category, isPaid });
+        await updateCourse(courseId, { title, description, category, isPaid, thumbnailUrl });
 
         res.status(200).send({ message: "Course updated successfully" });
     } catch (error) {

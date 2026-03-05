@@ -18,6 +18,7 @@ export interface EnrolledCourseData {
     title: string;
     category: string;
     progress: number;
+    thumbnailUrl?: string;
     enrolledAt: string;
     lastAccessedAt?: string;
 }
@@ -71,6 +72,7 @@ export const getStudentEnrolledCourses = async (
             title: courseData?.title || "Unknown Course",
             category: courseData?.category || "grammar",
             progress: enrollment.progress,
+            thumbnailUrl: courseData?.thumbnailUrl,
             enrolledAt: enrollment.enrolledAt,
             lastAccessedAt: enrollment.lastAccessedAt,
         };

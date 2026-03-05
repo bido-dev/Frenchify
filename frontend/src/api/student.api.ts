@@ -9,6 +9,7 @@ export interface Course {
     teacherName: string;
     status: 'draft' | 'published';
     category: 'grammar' | 'conversation';
+    thumbnailUrl?: string;
     createdAt: string;
 }
 
@@ -98,6 +99,7 @@ export interface EnrolledCourse {
     title: string;
     category: string;
     progress: number;
+    thumbnailUrl?: string;
     enrolledAt: string;
     lastAccessedAt?: string;
 }

@@ -16,6 +16,7 @@ export interface TeacherCourse {
     status: 'draft' | 'published';
     enrolledCount: number;
     category: string;
+    thumbnailUrl?: string;
     createdAt: string;
 }
 

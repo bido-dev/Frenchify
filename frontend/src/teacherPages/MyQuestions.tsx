@@ -91,16 +91,14 @@ export const MyQuestions: React.FC = () => {
     }
 
     return (
-        <div className="max-w-5xl mx-auto space-y-8">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-2xl font-bold text-gray-900">Student Questions</h1>
-                    {questions.length > 0 && (
-                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                            <Clock size={14} /> {questions.length} pending
-                        </span>
-                    )}
-                </div>
+        <div className="max-w-5xl mx-auto space-y-6 sm:space-y-8 px-4 sm:px-6">
+            <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Student Questions</h1>
+                {questions.length > 0 && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                        <Clock size={14} /> {questions.length} pending
+                    </span>
+                )}
             </div>
 
             <div className="space-y-4">
@@ -112,30 +110,30 @@ export const MyQuestions: React.FC = () => {
                     </div>
                 ) : (
                     questions.map((q) => (
-                        <div key={q.questionId} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
-                            <div className="flex items-start gap-4">
-                                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 font-bold text-sm">
+                        <div key={q.questionId} className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 transition-all hover:shadow-md">
+                            <div className="flex items-start gap-3 sm:gap-4">
+                                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0 font-bold text-sm">
                                     {q.userName?.charAt(0)?.toUpperCase() || '?'}
                                 </div>
-                                <div className="flex-1">
-                                    <div className="flex justify-between items-start">
-                                        <div>
-                                            <h3 className="text-base font-semibold text-gray-900">{q.userName}</h3>
-                                            <div className="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-1 sm:gap-2">
+                                        <div className="min-w-0">
+                                            <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">{q.userName}</h3>
+                                            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mt-0.5">
                                                 <span>{formatTimeAgo(q.createdAt)}</span>
                                             </div>
                                         </div>
-                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 self-start flex-shrink-0">
                                             <Clock size={12} /> Pending
                                         </span>
                                     </div>
 
-                                    <div className="mt-3 p-4 bg-gray-50 rounded-lg text-gray-800 text-base leading-relaxed">
+                                    <div className="mt-3 p-3 sm:p-4 bg-gray-50 rounded-lg text-gray-800 text-sm sm:text-base leading-relaxed break-words">
                                         "{q.content}"
                                     </div>
 
                                     {/* Reply Section */}
-                                    <div className="mt-4 space-y-3">
+                                    <div className="mt-3 sm:mt-4 space-y-3">
                                         <textarea
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
                                             placeholder="Write your reply here..."

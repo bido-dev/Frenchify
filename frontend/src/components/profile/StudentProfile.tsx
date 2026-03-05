@@ -117,7 +117,16 @@ export const StudentProfile: React.FC = () => {
                     <div className="space-y-4">
                         {courses.map(course => (
                             <div key={course.id} className="group flex flex-col sm:flex-row gap-4 p-4 border border-gray-100 rounded-xl hover:bg-blue-50/50 hover:border-blue-100 transition-all duration-200">
-                                <div className="flex-1">
+                                <div className="h-16 w-24 sm:h-20 sm:w-32 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden relative hidden sm:block">
+                                    {course.thumbnailUrl ? (
+                                        <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                            <Book className="w-6 h-6 mb-0.5 opacity-50" />
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-start mb-3">
                                         <div>
                                             <h3 className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors">{course.title}</h3>

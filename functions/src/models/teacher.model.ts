@@ -18,6 +18,7 @@ export interface TeacherCourseData {
     status: "draft" | "published";
     enrolledCount: number;
     category: string;
+    thumbnailUrl?: string;
     createdAt: string;
 }
 
@@ -78,6 +79,7 @@ export const getTeacherCourses = async (
             status: data.status,
             enrolledCount,
             category: data.category,
+            thumbnailUrl: data.thumbnailUrl,
             createdAt: data.createdAt,
         };
     });

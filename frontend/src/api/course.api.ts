@@ -9,6 +9,7 @@ export interface CourseCreateData {
     description: string;
     category: 'grammar' | 'conversation';
     isPaid: boolean;
+    thumbnailUrl?: string;
 }
 
 export interface CourseDetail {
@@ -19,6 +20,7 @@ export interface CourseDetail {
     category: 'grammar' | 'conversation';
     isPaid: boolean;
     status: 'draft' | 'published';
+    thumbnailUrl?: string;
     createdAt: string;
     updatedAt: string;
 }

@@ -115,7 +115,7 @@ export const Dashboard: React.FC = () => {
                             id={course.id}
                             title={course.title}
                             teacherName={course.teacherName}
-                            thumbnailUrl="" // API doesn't return thumbnail yet
+                            thumbnailUrl={course.thumbnailUrl || ''}
                             isPaid={course.isPaid}
                             userTier={user?.tier || 'free'}
                             category={course.category}

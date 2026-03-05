@@ -82,15 +82,15 @@ export const TeacherDashboard: React.FC = () => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-8 px-4 sm:px-6">
             <Header />
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h1>
                     <p className="text-gray-500">Manage your language courses and content.</p>
                 </div>
                 <Link to="/teacher/course/new">
-                    <Button>
+                    <Button className="w-full sm:w-auto">
                         <Plus className="w-5 h-5 mr-2" />
                         Create Course
                     </Button>
@@ -153,23 +153,31 @@ export const TeacherDashboard: React.FC = () => {
                 ) : (
                     <div className="divide-y divide-gray-200">
                         {courses.map((course) => (
-                            <div key={course.id} className="p-6 flex items-center justify-between hover:bg-gray-50 transition-colors">
+                            <div key={course.id} className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:bg-gray-50 transition-colors">
                                 <div className="flex items-center gap-4 min-w-0">
-                                    <div className="h-16 w-24 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                                    <div className="h-14 w-20 sm:h-16 sm:w-24 bg-gray-200 rounded-lg flex-shrink-0 overflow-hidden relative">
+                                        {course.thumbnailUrl ? (
+                                            <img src={course.thumbnailUrl} alt={course.title} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
+                                                <BookOpen size={20} className="mb-0.5 opacity-50" />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="min-w-0">
                                         <h4 className="font-bold text-gray-900 truncate">{course.title}</h4>
-                                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 flex-wrap">
+                                        <div className="flex items-center gap-2 sm:gap-3 mt-1 text-sm text-gray-500 flex-wrap">
                                             <Badge variant={course.status === 'published' ? 'success' : 'neutral'} text={course.status} />
-                                            <span>•</span>
+                                            <span className="hidden sm:inline">•</span>
                                             <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
                                                 {course.category === 'grammar' ? 'Grammar' : 'Conversation'}
                                             </span>
-                                            <span>•</span>
+                                            <span className="hidden sm:inline">•</span>
                                             <span>{course.enrolledCount} Students</span>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-3 flex-shrink-0">
+                                <div className="flex items-center gap-3 flex-shrink-0 ml-auto sm:ml-0">
                                     <Button variant="ghost" size="sm" onClick={() => navigate(`/teacher/course/${course.id}/edit`)}>
                                         <Edit className="w-4 h-4 mr-2" />
                                         Edit
